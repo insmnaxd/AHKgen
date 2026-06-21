@@ -6,11 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- Bigger "Text to send" field with newline support and SendInput
-- Keyboard layout switcher
-- Multi-language support
-- Indicator of ongoing changes in AHKgen tabs (for example if something was added in Hotkeys section)
-- Change app window display from px to %
+
+- Multi-language support (EN, PL, ES, DE, FR, PT, CN, JP)
+
+## [0.8.0] 2026-06-21
+
+### Added
+
+- Dynamic indicator of existing macros per category
+- Keyboard layout choice (QWERTY, QWERTZ, AZERTY)
+- Default SendMode can be now overridden with Event if Input doesn't work for a specific text string
+
+### Changed
+
+- "Send text" supports newlines and multiple text lines again
+
+### Fixed
+
+- Keyboard GUI now clears properly after a hotkey or remap is added
 
 ## [0.7.0] 2026-06-20
 

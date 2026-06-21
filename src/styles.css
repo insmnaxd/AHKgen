@@ -112,6 +112,7 @@ body {
 }
 
 .field-group input[type="text"],
+.field-group textarea,
 .field-group select {
   width: 100%;
   padding: 9px 12px;
@@ -126,11 +127,13 @@ body {
 }
 
 .field-group input[type="text"]:focus,
+.field-group textarea:focus,
 .field-group select:focus {
   border-color: var(--accent);
 }
 
-.field-group input[type="text"]::placeholder {
+.field-group input[type="text"]::placeholder,
+.field-group textarea::placeholder {
   color: #6b6b6b;
 }
 
@@ -237,6 +240,21 @@ body {
   padding: 0;
   max-height: 360px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #555555 var(--panel-bg);
+}
+
+.hotkey-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hotkey-list::-webkit-scrollbar-track {
+  background: var(--panel-bg);
+}
+
+.hotkey-list::-webkit-scrollbar-thumb {
+  background-color: #555555;
+  border-radius: 4px;
 }
 
 .empty-state {
@@ -289,7 +307,9 @@ body {
   font-style: italic;
 }
 
-.btn-remove {
+.btn-remove,
+.btn-remove-remap,
+.btn-remove-hotstring {
   background: none;
   border: none;
   color: var(--text-muted);
@@ -301,7 +321,9 @@ body {
   transition: color 0.15s;
 }
 
-.btn-remove:hover {
+.btn-remove:hover,
+.btn-remove-remap:hover,
+.btn-remove-hotstring:hover {
   color: var(--danger);
 }
 
@@ -320,6 +342,21 @@ body {
   line-height: 1.5;
   resize: vertical;
   outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: #555555 var(--input-bg);
+}
+
+#script-preview::-webkit-scrollbar {
+  width: 8px;
+}
+
+#script-preview::-webkit-scrollbar-track {
+  background: var(--input-bg);
+}
+
+#script-preview::-webkit-scrollbar-thumb {
+  background-color: #555555;
+  border-radius: 4px;
 }
 
 /* --- Responsive --- */
@@ -424,7 +461,9 @@ body {
   flex-shrink: 0;
 }
 
-.btn-edit {
+.btn-edit,
+.btn-edit-remap,
+.btn-edit-hotstring {
   background: none;
   border: 1px solid var(--panel-border);
   color: var(--text-muted);
@@ -436,7 +475,9 @@ body {
   transition: color 0.15s, border-color 0.15s;
 }
 
-.btn-edit:hover {
+.btn-edit:hover,
+.btn-edit-remap:hover,
+.btn-edit-hotstring:hover {
   color: var(--accent);
   border-color: var(--accent);
 }
@@ -450,6 +491,9 @@ body {
 }
 
 .mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 20px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -530,10 +574,42 @@ body {
   font-size: 0.9rem;
 }
 
-.global-distinguish-toggle {
+.header-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
   margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.global-distinguish-toggle {
+  margin-top: 0;
   font-size: 0.82rem;
   color: var(--text-muted);
+}
+
+.header-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.header-select-group select {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+.header-select-group select:focus {
+  border-color: var(--accent);
 }
 
 /* --- Modifier keys: visually distinct from regular keys --- */
@@ -572,11 +648,47 @@ body {
 
 .action-value-row {
   display: flex;
+  align-items: flex-start;
   gap: 8px;
 }
 
-.action-value-row input {
+.action-value-row input,
+.action-value-row textarea {
   flex: 1;
+}
+
+#action-value {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+
+  /* Custom scrollbar so it matches the dark theme instead of the default white one */
+  scrollbar-width: thin;
+  scrollbar-color: #555555 var(--input-bg);
+}
+
+#action-value::-webkit-scrollbar {
+  width: 8px;
+}
+
+#action-value::-webkit-scrollbar-track {
+  background: var(--input-bg);
+}
+
+#action-value::-webkit-scrollbar-thumb {
+  background-color: #555555;
+  border-radius: 4px;
+}
+
+/* "Send text" mode: a tall, resizable textarea */
+textarea#action-value {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* Every other action type: a normal single-line input, same height as other text fields */
+input#action-value {
+  resize: none;
 }
 
 .action-value-row .btn {
@@ -589,4 +701,24 @@ body {
   font-weight: 400;
   color: var(--text-muted);
   vertical-align: middle;
+}
+
+.tab-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: var(--input-bg);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mode-tab.active .tab-badge {
+  background-color: var(--accent);
+  color: #0f0f0f;
 }

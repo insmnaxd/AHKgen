@@ -3,26 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AHKgen v0.7.0</title>
+    <title>AHKgen v0.8.0</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app">
       <header class="app-header">
-        <h1>AHKgen <span class="version-tag">v0.7.0</span></h1>
+        <h1>AHKgen <span class="version-tag">v0.8.0</span></h1>
         <p class="subtitle">Simple script generator for AutoHotkey v1 — made by plalel@coloplast.com</p>
-        <label class="checkbox global-distinguish-toggle">
-          <input type="checkbox" id="distinguish-sides-toggle" />
-          Distinguish left/right keys (Ctrl, Shift, Alt, Win)
-        </label>
+        <div class="header-settings-row">
+          <label class="checkbox global-distinguish-toggle">
+            <input type="checkbox" id="distinguish-sides-toggle" />
+            Distinguish left/right keys (Ctrl, Shift, Alt, Win)
+          </label>
+          <label class="header-select-group">
+            Keyboard layout
+            <select id="keyboard-layout-select">
+              <option value="qwerty">QWERTY</option>
+              <option value="qwertz">QWERTZ</option>
+              <option value="azerty">AZERTY</option>
+            </select>
+          </label>
+        </div>
       </header>
 
       <main class="layout">
         <!-- MODE TABS -->
         <div class="mode-tabs panel-wide">
-          <button type="button" class="mode-tab active" data-mode="hotkeys">Hotkeys</button>
-          <button type="button" class="mode-tab" data-mode="hotstrings">Hotstrings</button>
-          <button type="button" class="mode-tab" data-mode="remap">Remapping</button>
+          <button type="button" class="mode-tab active" data-mode="hotkeys">Hotkeys <span class="tab-badge" id="tab-badge-hotkeys"></span></button>
+          <button type="button" class="mode-tab" data-mode="hotstrings">Hotstrings <span class="tab-badge" id="tab-badge-hotstrings"></span></button>
+          <button type="button" class="mode-tab" data-mode="remap">Remapping <span class="tab-badge" id="tab-badge-remap"></span></button>
         </div>
 
         <!-- NEW HOTKEY FORM (Hotkeys mode) -->
@@ -142,16 +152,23 @@
           <div class="field-group" id="action-value-group">
             <label for="action-value" id="action-value-label">Text to send</label>
             <div class="action-value-row">
-              <input
-                type="text"
+              <textarea
                 id="action-value"
                 placeholder="Enter text..."
-              />
+                rows="4"
+              ></textarea>
               <button type="button" id="browse-file-btn" class="btn btn-secondary hidden">Browse...</button>
             </div>
             <p class="hint" id="action-value-hint">
               This text will be typed when the hotkey is pressed.
             </p>
+          </div>
+
+          <div class="field-group hidden" id="send-mode-group">
+            <label class="checkbox" title="Switches this hotkey to the older Event method instead of the faster Input method — try this only if Input mode causes issues in a specific app.">
+              <input type="checkbox" id="send-mode-event-toggle" />
+              Use Event send mode instead of Input
+            </label>
           </div>
 
           <div class="field-group">
