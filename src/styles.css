@@ -3,14 +3,19 @@
   font-size: 15px;
   line-height: 1.5;
   font-weight: 400;
-  color: #e6e6e6;
-  background-color: #1e1e1e;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
 
+/* --- Theme variables --- */
+/* Dark is the default look (no data-theme attribute, or explicitly data-theme="dark").
+   Light overrides every variable below when data-theme="light" is set on <html>. */
+
+:root,
+html[data-theme="dark"] {
   --bg: #1e1e1e;
   --panel-bg: #262626;
   --panel-border: #3a3a3a;
@@ -18,13 +23,82 @@
   --accent-hover: #6ab8ff;
   --text-main: #e6e6e6;
   --text-muted: #9a9a9a;
+  --text-heading: #ffffff;
   --danger: #ff6b6b;
   --success: #4ade80;
   --input-bg: #1a1a1a;
+  --key-bg: #333333;
+  --key-border: #444444;
+  --key-hover-bg: #3d3d3d;
+  --key-hover-border: #555555;
+  --key-active-text: #0f0f0f;
+  --scrollbar-thumb: #555555;
+  --modifier-accent: #ff9f4d;
+  --modifier-accent-hover: #ffb574;
+  --modifier-bg: #3d3122;
+  --modifier-border: #5a4630;
+  --modifier-text: #e8c9a3;
+  --modifier-hover-bg: #473726;
+  --editing-bg: #1f2d3d;
+
+  color: var(--text-main);
+  background-color: var(--bg);
+}
+
+html[data-theme="light"] {
+  --bg: #f5f5f5;
+  --panel-bg: #ffffff;
+  --panel-border: #d8d8d8;
+  --accent: #1a73e8;
+  --accent-hover: #1558b0;
+  --text-main: #1f1f1f;
+  --text-muted: #6b6b6b;
+  --text-heading: #0f0f0f;
+  --danger: #d33b3b;
+  --success: #1e9e54;
+  --input-bg: #ffffff;
+  --key-bg: #ececec;
+  --key-border: #cfcfcf;
+  --key-hover-bg: #e2e2e2;
+  --key-hover-border: #b8b8b8;
+  --key-active-text: #ffffff;
+  --scrollbar-thumb: #c2c2c2;
+  --modifier-accent: #e08a2e;
+  --modifier-accent-hover: #c8761f;
+  --modifier-bg: #fbe8d2;
+  --modifier-border: #e8c79a;
+  --modifier-text: #8a5a1e;
+  --modifier-hover-bg: #f6dcb8;
+  --editing-bg: #e8f0fb;
+
+  color: var(--text-main);
+  background-color: var(--bg);
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--bg);
+}
+
+html::-webkit-scrollbar {
+  width: 10px;
+}
+
+html::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+html::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 5px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background-color: var(--key-hover-border);
 }
 
 body {
@@ -43,17 +117,105 @@ body {
   margin-bottom: 24px;
 }
 
+.app-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .app-header h1 {
   margin: 0 0 4px;
   font-size: 1.6rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-heading);
 }
 
 .subtitle {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* --- Theme switch (iOS-style toggle) --- */
+
+.theme-switch {
+  flex-shrink: 0;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.theme-switch input {
+  /* Visually hidden but still focusable/clickable for accessibility */
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.theme-switch-track {
+  display: block;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background-color: var(--key-bg);
+  border: 1px solid var(--panel-border);
+  position: relative;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.theme-switch input:checked + .theme-switch-track {
+  background-color: var(--modifier-accent);
+  border-color: var(--modifier-accent);
+}
+
+.theme-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Checked = dark mode -> thumb turns dark to match the moon icon */
+.theme-switch input:checked ~ .theme-switch-track .theme-switch-thumb {
+  background-color: #2b2b2b;
+}
+
+/* Checked = dark mode -> thumb slides to the right */
+.theme-switch input:checked ~ .theme-switch-track .theme-switch-thumb {
+  transform: translateX(22px);
+}
+
+.theme-switch-icon {
+  position: absolute;
+  font-size: 0.7rem;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+
+/* Sun shows while unchecked (light mode), moon shows while checked (dark mode) */
+.theme-switch-icon-sun {
+  opacity: 1;
+}
+
+.theme-switch-icon-moon {
+  opacity: 0;
+}
+
+.theme-switch input:checked ~ .theme-switch-track .theme-switch-icon-sun {
+  opacity: 0;
+}
+
+.theme-switch input:checked ~ .theme-switch-track .theme-switch-icon-moon {
+  opacity: 1;
 }
 
 /* --- Layout --- */
@@ -81,7 +243,7 @@ body {
   margin: 0 0 16px;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-heading);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -89,7 +251,7 @@ body {
 
 .count-badge {
   background-color: var(--accent);
-  color: #0f0f0f;
+  color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 8px;
@@ -134,7 +296,8 @@ body {
 
 .field-group input[type="text"]::placeholder,
 .field-group textarea::placeholder {
-  color: #6b6b6b;
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .hint {
@@ -185,7 +348,7 @@ body {
 
 .btn-primary {
   background-color: var(--accent);
-  color: #0f0f0f;
+  color: #ffffff;
 }
 
 .btn-primary:hover {
@@ -241,7 +404,7 @@ body {
   max-height: 360px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #555555 var(--panel-bg);
+  scrollbar-color: var(--scrollbar-thumb) var(--panel-bg);
 }
 
 .hotkey-list::-webkit-scrollbar {
@@ -253,8 +416,12 @@ body {
 }
 
 .hotkey-list::-webkit-scrollbar-thumb {
-  background-color: #555555;
+  background-color: var(--scrollbar-thumb);
   border-radius: 4px;
+}
+
+.hotkey-list::-webkit-scrollbar-thumb:hover {
+  background-color: var(--key-hover-border);
 }
 
 .empty-state {
@@ -285,7 +452,7 @@ body {
 }
 
 .hotkey-badge {
-  background-color: #333;
+  background-color: var(--key-bg);
   color: var(--accent);
   font-family: "Consolas", "Courier New", monospace;
   font-size: 0.82rem;
@@ -333,7 +500,7 @@ body {
   width: 100%;
   min-height: 280px;
   background-color: var(--input-bg);
-  color: #d4d4d4;
+  color: var(--text-main);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
   padding: 14px;
@@ -343,7 +510,7 @@ body {
   resize: vertical;
   outline: none;
   scrollbar-width: thin;
-  scrollbar-color: #555555 var(--input-bg);
+  scrollbar-color: var(--scrollbar-thumb) var(--input-bg);
 }
 
 #script-preview::-webkit-scrollbar {
@@ -355,8 +522,12 @@ body {
 }
 
 #script-preview::-webkit-scrollbar-thumb {
-  background-color: #555555;
+  background-color: var(--scrollbar-thumb);
   border-radius: 4px;
+}
+
+#script-preview::-webkit-scrollbar-thumb:hover {
+  background-color: var(--key-hover-border);
 }
 
 /* --- Responsive --- */
@@ -409,8 +580,8 @@ body {
   font-weight: 500;
   font-family: inherit;
   color: var(--text-main);
-  background-color: #333333;
-  border: 1px solid #444444;
+  background-color: var(--key-bg);
+  border: 1px solid var(--key-border);
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.1s, border-color 0.1s, transform 0.05s;
@@ -418,8 +589,8 @@ body {
 }
 
 .kb-key:hover {
-  background-color: #3d3d3d;
-  border-color: #555555;
+  background-color: var(--key-hover-bg);
+  border-color: var(--key-hover-border);
 }
 
 .kb-key:active {
@@ -429,7 +600,7 @@ body {
 .kb-key.active {
   background-color: var(--accent);
   border-color: var(--accent);
-  color: #0f0f0f;
+  color: var(--key-active-text);
   font-weight: 700;
 }
 
@@ -441,17 +612,13 @@ body {
   flex: 4;
 }
 
-.kb-modifier {
-  font-weight: 600;
-}
-
 .hidden {
   display: none !important;
 }
 
 .hotkey-item.editing {
   border-color: var(--accent);
-  background-color: #1f2d3d;
+  background-color: var(--editing-bg);
 }
 
 .hotkey-item-actions {
@@ -512,7 +679,7 @@ body {
 }
 
 .mode-tab.active {
-  color: #ffffff;
+  color: var(--text-heading);
   background-color: var(--panel-bg);
   border-color: var(--panel-border);
 }
@@ -554,7 +721,7 @@ body {
 }
 
 .remap-target-btn:hover {
-  border-color: #555555;
+  border-color: var(--key-hover-border);
 }
 
 .remap-target-btn.active {
@@ -614,29 +781,22 @@ body {
 
 /* --- Modifier keys: visually distinct from regular keys --- */
 
-:root {
-  --modifier-accent: #ff9f4d;
-  --modifier-accent-hover: #ffb574;
-  --modifier-bg: #3d3122;
-  --modifier-border: #5a4630;
-}
-
 .kb-modifier {
   font-weight: 600;
   background-color: var(--modifier-bg);
   border-color: var(--modifier-border);
-  color: #e8c9a3;
+  color: var(--modifier-text);
 }
 
 .kb-modifier:hover {
-  background-color: #473726;
+  background-color: var(--modifier-hover-bg);
   border-color: var(--modifier-accent);
 }
 
 .kb-modifier.active {
   background-color: var(--modifier-accent) !important;
   border-color: var(--modifier-accent) !important;
-  color: #1a1208 !important;
+  color: #ffffff !important;
 }
 
 .hotstring-options {
@@ -661,10 +821,8 @@ body {
   font-family: "Consolas", "Courier New", monospace;
   font-size: 0.88rem;
   line-height: 1.5;
-
-  /* Custom scrollbar so it matches the dark theme instead of the default white one */
   scrollbar-width: thin;
-  scrollbar-color: #555555 var(--input-bg);
+  scrollbar-color: var(--scrollbar-thumb) var(--input-bg);
 }
 
 #action-value::-webkit-scrollbar {
@@ -676,17 +834,19 @@ body {
 }
 
 #action-value::-webkit-scrollbar-thumb {
-  background-color: #555555;
+  background-color: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
-/* "Send text" mode: a tall, resizable textarea */
+#action-value::-webkit-scrollbar-thumb:hover {
+  background-color: var(--key-hover-border);
+}
+
 textarea#action-value {
   resize: vertical;
   min-height: 90px;
 }
 
-/* Every other action type: a normal single-line input, same height as other text fields */
 input#action-value {
   resize: none;
 }
@@ -720,5 +880,5 @@ input#action-value {
 
 .mode-tab.active .tab-badge {
   background-color: var(--accent);
-  color: #0f0f0f;
+  color: #ffffff;
 }

@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Multi-language support (EN, PL, ES, DE, FR, PT, CN, JP)
+- Improve version control
+- Easy cache cleanup
+
+## [0.9.0] 2026-06-??
+
+### Added
+
+- Light/Dark mode:
+    - App will read the initial theme from system settings
 
 ## [0.8.0] 2026-06-21
 
@@ -69,6 +78,7 @@ AHKgen went through a major revision and was completely rebuilt, moving from Pyt
 ### Changed
 
 - Moved app from Python to Tauri framework (HTML/CSS/JavaScript frontend + Rust backend)
+- App now runs in dark mode
 
 ### Removed
 
