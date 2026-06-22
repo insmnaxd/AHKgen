@@ -10,8 +10,6 @@
     "windows": [
       {
         "title": "AHKgen",
-        "width": 800,
-        "height": 800,
         "center": true
       }
     ],

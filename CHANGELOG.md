@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Multi-language support (EN, PL, ES, DE, FR, PT, CN, JP)
 - Improve version control
-- Easy cache cleanup
+- Cache cleanup
+- Save as .ahk and launch
+- Add .ahk to shell:startup
+
+## [0.9.1] 2026-06-22
+
+### Fixed
+
+- Hotstring generation
 
 ## [0.9.0] 2026-06-22
 

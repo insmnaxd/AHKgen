@@ -574,7 +574,7 @@ function buildHotstringLine(hotstring) {
   if (hotstring.insideWord) optionsStr += "?";
   if (hotstring.rawText) optionsStr += "R";
 
-  const optionsPart = optionsStr ? `:${optionsStr}:` : ":";
+  const optionsPart = optionsStr ? `:${optionsStr}:` : "::";
   lines.push(`${optionsPart}${hotstring.trigger}::${hotstring.replacement}`);
   return lines.join("\n");
 }
