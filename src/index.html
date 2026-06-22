@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AHKgen v0.9.1</title>
+    <title>AHKgen</title>
     <script>
       // Runs before CSS loads, to avoid a flash of the wrong theme on startup.
       // Mirrors the logic in main.js's initTheme(), but kept minimal and inline here
@@ -23,11 +23,29 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- CUSTOM TITLE BAR -->
+    <!-- data-tauri-drag-region makes the empty parts of this bar draggable, like a native title bar.
+         The buttons themselves are excluded from drag handling automatically since they're interactive elements. -->
+    <div class="titlebar" data-tauri-drag-region>
+      <div class="titlebar-title" data-tauri-drag-region>AHKgen</div>
+      <div class="titlebar-controls">
+        <button type="button" class="titlebar-btn" id="titlebar-minimize" title="Minimize" aria-label="Minimize">
+          <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 5h10" stroke="currentColor" stroke-width="1" /></svg>
+        </button>
+        <button type="button" class="titlebar-btn" id="titlebar-maximize" title="Maximize" aria-label="Maximize">
+          <svg viewBox="0 0 10 10" width="10" height="10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1" /></svg>
+        </button>
+        <button type="button" class="titlebar-btn titlebar-btn-close" id="titlebar-close" title="Close" aria-label="Close">
+          <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1" /></svg>
+        </button>
+      </div>
+    </div>
+
     <div class="app">
       <header class="app-header">
         <div class="app-header-top">
           <div>
-            <h1>AHKgen <span class="version-tag">v0.9.1</span></h1>
+            <h1>AHKgen <span class="version-tag">v0.9.2</span></h1>
             <p class="subtitle">Simple script generator for AutoHotkey v1 — made by plalel@coloplast.com</p>
           </div>
           <label class="theme-switch" title="Toggle light/dark theme">

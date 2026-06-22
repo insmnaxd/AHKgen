@@ -8,10 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Multi-language support (EN, PL, ES, DE, FR, PT, CN, JP)
-- Improve version control
 - Cache cleanup
 - Save as .ahk and launch
 - Add .ahk to shell:startup
+
+## [0.9.2] 2026-06-22
+
+### Changed
+
+- Adjusted title bar
+- Improved version control
 
 ## [0.9.1] 2026-06-22
 

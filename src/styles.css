@@ -1,3 +1,67 @@
+/* --- Custom title bar (replaces native Windows decorations) --- */
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  flex-shrink: 0;
+  padding-left: 12px;
+  background-color: var(--bg);
+  border-bottom: 1px solid var(--panel-border);
+  -webkit-user-select: none;
+  user-select: none;
+  /* Window itself has no native frame anymore, so this bar is the only drag handle. */
+}
+
+.titlebar-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.titlebar-controls {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+}
+
+.titlebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.titlebar-btn svg {
+  pointer-events: none;
+}
+
+.titlebar-btn:hover {
+  background-color: var(--key-hover-bg);
+  color: var(--text-main);
+}
+
+.titlebar-btn:active {
+  background-color: var(--key-hover-border);
+}
+
+.titlebar-btn-close:hover {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+
+.titlebar-btn-close:active {
+  background-color: #b33333;
+}
+
 :root {
   font-family: "Segoe UI", Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 15px;
@@ -80,37 +144,47 @@ html[data-theme="light"] {
 }
 
 html {
+  height: 100%;
+  overflow: hidden; /* the document itself never scrolls - .app does, so the titlebar above it is unaffected */
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app {
+  flex: 1 1 auto;
+  min-height: 0; /* required for a flex child to actually shrink and become scrollable */
+  overflow-y: auto;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 32px 48px;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--bg);
 }
 
-html::-webkit-scrollbar {
+.app::-webkit-scrollbar {
   width: 10px;
 }
 
-html::-webkit-scrollbar-track {
+.app::-webkit-scrollbar-track {
   background: var(--bg);
 }
 
-html::-webkit-scrollbar-thumb {
+.app::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
   border-radius: 5px;
 }
 
-html::-webkit-scrollbar-thumb:hover {
+.app::-webkit-scrollbar-thumb:hover {
   background-color: var(--key-hover-border);
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg);
-}
-
-.app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 32px 48px;
 }
 
 .app-header {
