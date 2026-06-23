@@ -28,6 +28,7 @@ logs
 *.ntvs*
 *.njsproj
 *.sln
+*.agents
 
 # OS
 .DS_Store

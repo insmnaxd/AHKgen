@@ -88,7 +88,7 @@ html[data-theme="dark"] {
   --text-main: #e6e6e6;
   --text-muted: #9a9a9a;
   --text-heading: #ffffff;
-  --danger: #ff6b6b;
+  --danger: #d33b3b;
   --success: #4ade80;
   --input-bg: #1a1a1a;
   --key-bg: #333333;
@@ -156,6 +156,15 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .app {
@@ -628,6 +637,17 @@ body {
   text-align: center;
 }
 
+#selected-hotkey-display,
+.remap-target-btn {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#selected-hotkey-display {
+  caret-color: transparent;
+  pointer-events: none;
+}
+
 .keyboard {
   margin: 16px 0 20px;
   padding: 14px;
@@ -823,13 +843,23 @@ body {
   flex-wrap: wrap;
 }
 
-.global-distinguish-toggle {
+.keyboard-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 4px 0 10px;
+  flex-wrap: wrap;
+}
+
+.keyboard-distinguish-toggle {
   margin-top: 0;
   font-size: 0.82rem;
   color: var(--text-muted);
 }
 
-.header-select-group {
+.header-select-group,
+.keyboard-layout-group {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -837,7 +867,8 @@ body {
   color: var(--text-muted);
 }
 
-.header-select-group select {
+.header-select-group select,
+.keyboard-layout-group select {
   padding: 5px 10px;
   border-radius: 6px;
   border: 1px solid var(--panel-border);
@@ -849,7 +880,8 @@ body {
   cursor: pointer;
 }
 
-.header-select-group select:focus {
+.header-select-group select:focus,
+.keyboard-layout-group select:focus {
   border-color: var(--accent);
 }
 

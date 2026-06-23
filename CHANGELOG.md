@@ -1,61 +1,99 @@
 # Changelog
 
-All relevant changes in this project will be documented in this file.
+All notable changes in this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Planned]
 
-## [Unreleased]
+### Next
 
-- Multi-language support (EN, PL, ES, DE, FR, PT, CN, JP)
-- Catching key inputs for hotkeys
-- Cache cleanup
-- Save as .ahk and launch
-- Add .ahk to shell:startup
+- Reset configuration button.
+- Catching key inputs.
 
-## [0.9.3] 2026-06-23
+## Later
 
-### Changed
+- More languages (ES :es:, DE :de:, FR :fr:, PT :portugal:, CN :cn:, JP :jp:).
+- Expanded keyboard GUI.
+- Mouse input.
 
-- Revised version control
+## Ideas
 
-## [0.9.2] 2026-06-22
+- Save as .ahk and launch.
+- Add .ahk to shell:startup.
 
-### Changed
-
-- Adjusted title bar
-- Improved version control
-
-## [0.9.1] 2026-06-22
-
-### Fixed
-
-- Hotstring generation
-
-## [0.9.0] 2026-06-22
+## [1.0.0-alpha.0] - 2026-06-23
 
 ### Added
 
-- Light/Dark mode:
-    - App will read the initial theme from system settings
-
-## [0.8.0] 2026-06-21
-
-### Added
-
-- Dynamic indicator of existing macros per category
-- Keyboard layout choice (QWERTY, QWERTZ, AZERTY)
-- Default SendMode can be now overridden with Event if Input doesn't work for a specific text string
+- Multi-language support:
+    - Default language inherits from the browser language.
+    - English :uk: is set as the fallback language if browser language is not supported.
+    - Added Polish :poland: translation.
+- Configuration file:
+    - Saves the theme.
+    - Saves the keyboard layout.
+    - Saves the language.
+- Validation:
+    - Prevent creating hotstrings containing a colon (`:`).
 
 ### Changed
 
-- "Send text" supports newlines and multiple text lines again
+- Moved `L/R mode` and keyboard layout option to `Hotkeys` and `Remapping` tabs.
+- Key input fields are no longer selectable.
+- Blocked text selection in non-editable areas.
+- Adjusted dark theme colours.
 
 ### Fixed
 
-- Keyboard GUI now clears properly after a hotkey or remap is added
+- `AltGr` no longer toggles `Alt` with `L/R mode` disabled.
+- `Alt` now produces `!` in `L/R mode`.
 
-## [0.7.0] 2026-06-20
+## [0.9.3] - 2026-06-23
+
+### Changed
+
+- Further improved version control.
+
+## [0.9.2] - 2026-06-22
+
+### Changed
+
+- Title bar is now independent from Windows default window appearance.
+- Adjusted version control.
+
+## [0.9.1] - 2026-06-22
+
+### Fixed
+
+- Hotstring generation.
+
+## [0.9.0] - 2026-06-22
+
+### Added
+
+- Added light theme.
+- Added a button to switch between dark and light themes.
+- App will read the initial theme from system settings.
+
+## [0.8.0] - 2026-06-21
+
+### Added
+
+- Added dynamic indicator of existing macros per category.
+- Keyboard layout choice:
+    - QWERTY
+    - QWERTZ
+    - AZERTY
+- Default `SendMode` can now be overridden with `Event` if `Input` doesn't work for a specific text string.
+
+### Changed
+
+- `Send text` supports newlines and multiple text lines again.
+
+### Fixed
+
+- Keyboard GUI now clears properly after a hotkey or remap is added.
+
+## [0.7.0] - 2026-06-20
 
 AHKgen is now on GitHub.
 
@@ -63,115 +101,119 @@ AHKgen is now on GitHub.
 
 - Fixed low-res app icon appearance on Windows
 
-## [0.6.0] 2026-06-20
+## [0.6.0] - 2026-06-20
 
 ### Added
 
-- App icons
-- Key remapping
-- Hotstrings:
-    - Raw text option
+- App icon.
+- Key remapping.
+- Raw text option in `Hotstrings`.
 
 ### Changed
 
-- Multiple regular keys can no longer be selected simultaneously
+- Multiple regular keys can no longer be selected simultaneously.
 
-## [0.5.0] 2026-06-19
+## [0.5.0] - 2026-06-19
 
 AHKgen went through a major revision and was completely rebuilt, moving from Python to Tauri framework. App runs on WebView2, drastically reducing memory and storage usage.
 
 ### Added
 
-- Comments
-- Hotkeys:
+- `Hotkeys` tab:
     - Open URL
     - Run command
-- Validation checks:
-    - app will check whether an .ahk file was made with it and refuse to load it if it was not
+- Optional comments
 - Script generation:
-    - general header to indicate that the script was made using this app (used in above-mentioned validation check)
+    - General header to indicate that the script was made using this app (used in above-mentioned validation check)
     - AHK version indicator
-    - #NoEnv
-    - #SingleInstance
-    - SendMode, Input
-    - SetWorkingDir
+    - Default header:
+        ```
+        #NoEnv
+        #SingleInstance
+        SendMode, Input
+        SetWorkingDir, %A_ScriptDir%
+        ```
+- Validation:
+    - App checks whether an .ahk file was made with it and refuse to load it if it was not.
 
 ### Changed
 
-- Moved app from Python to Tauri framework (HTML/CSS/JavaScript frontend + Rust backend)
-- App now runs in dark mode
+- GUI is now dark.
 
 ### Removed
 
-- Temporarily reduced "Send text" capabilities until a new solution regarding UI is found:
-    - Newline is no longer supported
-    - Input field is reduced to a single line
+- Temporarily reduced `Send text` capabilities until a new solution regarding UI is found:
+    - Newline is no longer supported.
+    - Input field reduces to a single line.
 
-## [0.4.0] (2025-11-12):
+## [0.4.0] - 2025-11-12
 
-### Changed
+### Removed
 
-- Deleted underline from selected items
+- Deleted underline from selected items on the hotkey list.
 
 ### Fixed
 
-- Corrected app structure
-- Fixed AltGr issues
-- L/R checkbox switches itself in edit mode depending on hotkeys used
+- Fixed `AltGr` issues.
+- `L/R mode` checkbox switches itself in edit mode depending on hotkeys used.
 
 ## [0.3.0] - 2025-11-11
 
 ### Added
 
-- Mode selection
-- Hotstrings
-- L/R checkbox
-- Existing .ahk file import
-- Three options in hotstring mode:
+- Mode selection.
+- `Hotstrings` mode.
+- Three options in `Hotstrings` mode:
     - Trigger instantly
     - Case sensitive
     - Trigger inside words
+- `Distinguish L/R keys` option.
+- Existing .ahk file import.
+
 
 ### Changed
 
-- Rebuilt app structure
-- Revamped item editing
-- Revamped pop-ups again (auto size, pop-up types)
+- Rebuilt app structure.
+- Slightly adjusted item editing.
+- Revamped pop-ups again (auto size, pop-up types).
 
 ## [0.2.0] - 2025-11-10
 
 ### Added
 
-- New GUI elements:
-    - About button
-    - Paste from Clipboard button
-- Keys are now toggleable
-- Toggled keys will change their colour to darker
-- Blue colour for modifiers
-- Validation checks:
-    - No key selected
-    - No regular key selected
-    - No modifier key selected
-    - Too many regular keys selected
-    - Hotkey already assigned
+- `About` button.
+- `Paste from Clipboard` button.
+- Blue colour for modifiers.
+- Validation:
+    - Prevent adding a hotkey when no regular key is selected.
+    - Prevent adding a hotkey when no modifier key is selected.
+    - Prevent adding a hotkey when too many regular keys are selected.
+    - Prevent adding a hotkey when it is already assigned.
 
 ### Changed
 
-- Error pop-ups will always appear in the middle of the main window
+- Keys are now toggleable.
+- Toggled keys change their colour to darker.
+- Error pop-ups will always appear in the middle of the main window.
+
+### Fixed
+
+- Separated `Alt` from `AltGr` as AHK treats them as two different keys.
 
 ## [0.1.0] - 2025-11-07
 
+Initial release in Python language (backend + tkinter frontend).
+
 ### Added
 
-- Initial release in Python language (backend + tkinter frontend)
-- Basic GUI with QWERTY keyboard scheme
-- Text-based SendInput function
-- Saving hotkeys to .ahk
-- List of current hotkeys
-- Editing existing AHK scripts generated by AHKgen
-- Support for 4 modifiers: ctrl, shift, alt, win
-- Validation checks/error catching:
-    - .ahk file cannot be saved
-    - .ahk file cannot be opened
-    - No text is typed and/or hotkeys are selected
-    - Saving an .ahk file with no hotkeys created
+- Basic GUI with QWERTY keyboard scheme.
+- Text-based `SendInput` function.
+- Saving hotkeys to .ahk.
+- List of current hotkeys.
+- Editing existing AHK scripts generated by this program.
+- Support for 4 modifiers: `Ctrl`, `Shift`, `Alt`, `Win`.
+- Validation:
+    - Error message when .ahk file cannot be saved.
+    - Error message when .ahk file cannot be opened.
+    - Prevent adding a hotkey when no text is typed and or no keys are selected.
+    - Prevent saving an .ahk file with no hotkeys created.

@@ -1,4 +1,61 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager};
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UserConfig {
+    language: Option<String>,
+    theme: Option<String>,
+    keyboard_layout: Option<String>,
+}
+
+fn user_config_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|err| format!("Could not resolve app config directory: {err}"))?;
+
+    Ok(config_dir.join("config.json"))
+}
+
+#[tauri::command]
+fn load_user_config(app: AppHandle) -> Result<UserConfig, String> {
+    let path = user_config_path(&app)?;
+
+    if !path.exists() {
+        return Ok(UserConfig::default());
+    }
+
+    let contents = fs::read_to_string(&path)
+        .map_err(|err| format!("Could not read config file {}: {err}", path.display()))?;
+
+    serde_json::from_str(&contents)
+        .map_err(|err| format!("Could not parse config file {}: {err}", path.display()))
+}
+
+#[tauri::command]
+fn save_user_config(app: AppHandle, config: UserConfig) -> Result<(), String> {
+    let path = user_config_path(&app)?;
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|err| {
+            format!(
+                "Could not create config directory {}: {err}",
+                parent.display()
+            )
+        })?;
+    }
+
+    let contents = serde_json::to_string_pretty(&config)
+        .map_err(|err| format!("Could not serialize config: {err}"))?;
+
+    fs::write(&path, contents)
+        .map_err(|err| format!("Could not write config file {}: {err}", path.display()))
+}
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -11,7 +68,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            load_user_config,
+            save_user_config
+        ])
         .setup(|app| {
             use tauri::Manager;
 

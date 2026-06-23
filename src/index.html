@@ -5,19 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AHKgen</title>
     <script>
-      // Runs before CSS loads, to avoid a flash of the wrong theme on startup.
-      // Mirrors the logic in main.js's initTheme(), but kept minimal and inline here
-      // since it must execute synchronously before first paint.
+      // Runs before CSS loads and follows the system theme for first paint.
+      // main.js later applies the persisted theme from the app config file.
       (function () {
-        try {
-          var saved = localStorage.getItem("ahkgen.theme");
-          var theme = saved === "light" || saved === "dark"
-            ? saved
-            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-          document.documentElement.setAttribute("data-theme", theme);
-        } catch (e) {
-          document.documentElement.setAttribute("data-theme", "dark");
-        }
+        var theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
       })();
     </script>
     <link rel="stylesheet" href="styles.css" />
@@ -29,13 +21,13 @@
     <div class="titlebar" data-tauri-drag-region>
       <div class="titlebar-title" data-tauri-drag-region>AHKgen</div>
       <div class="titlebar-controls">
-        <button type="button" class="titlebar-btn" id="titlebar-minimize" title="Minimize" aria-label="Minimize">
+        <button type="button" class="titlebar-btn" id="titlebar-minimize" title="Minimize" aria-label="Minimize" data-i18n-title="titlebar.minimize" data-i18n-aria-label="titlebar.minimize">
           <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 5h10" stroke="currentColor" stroke-width="1" /></svg>
         </button>
-        <button type="button" class="titlebar-btn" id="titlebar-maximize" title="Maximize" aria-label="Maximize">
+        <button type="button" class="titlebar-btn" id="titlebar-maximize" title="Maximize" aria-label="Maximize" data-i18n-title="titlebar.maximize" data-i18n-aria-label="titlebar.maximize">
           <svg viewBox="0 0 10 10" width="10" height="10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1" /></svg>
         </button>
-        <button type="button" class="titlebar-btn titlebar-btn-close" id="titlebar-close" title="Close" aria-label="Close">
+        <button type="button" class="titlebar-btn titlebar-btn-close" id="titlebar-close" title="Close" aria-label="Close" data-i18n-title="titlebar.close" data-i18n-aria-label="titlebar.close">
           <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor" stroke-width="1" /></svg>
         </button>
       </div>
@@ -46,9 +38,9 @@
         <div class="app-header-top">
           <div>
             <h1>AHKgen <span class="version-tag"></span></h1>
-            <p class="subtitle">Simple script generator for AutoHotkey v1</p>
+            <p class="subtitle" data-i18n="app.subtitle">Simple script generator for AutoHotkey v1</p>
           </div>
-          <label class="theme-switch" title="Toggle light/dark theme">
+          <label class="theme-switch" title="Toggle light/dark theme" data-i18n-title="theme.toggle">
             <input type="checkbox" id="theme-toggle-checkbox" />
             <span class="theme-switch-track">
               <span class="theme-switch-thumb">
@@ -59,16 +51,11 @@
           </label>
         </div>
         <div class="header-settings-row">
-          <label class="checkbox global-distinguish-toggle">
-            <input type="checkbox" id="distinguish-sides-toggle" />
-            Distinguish left/right keys (Ctrl, Shift, Alt, Win)
-          </label>
           <label class="header-select-group">
-            Keyboard layout
-            <select id="keyboard-layout-select">
-              <option value="qwerty">QWERTY</option>
-              <option value="qwertz">QWERTZ</option>
-              <option value="azerty">AZERTY</option>
+            <span data-i18n="settings.language">Language</span>
+            <select id="language-select">
+              <option value="en" data-i18n="language.en">English</option>
+              <option value="pl" data-i18n="language.pl">Polski</option>
             </select>
           </label>
         </div>
@@ -77,26 +64,43 @@
       <main class="layout">
         <!-- MODE TABS -->
         <div class="mode-tabs panel-wide">
-          <button type="button" class="mode-tab active" data-mode="hotkeys">Hotkeys <span class="tab-badge" id="tab-badge-hotkeys"></span></button>
-          <button type="button" class="mode-tab" data-mode="hotstrings">Hotstrings <span class="tab-badge" id="tab-badge-hotstrings"></span></button>
-          <button type="button" class="mode-tab" data-mode="remap">Remapping <span class="tab-badge" id="tab-badge-remap"></span></button>
+          <button type="button" class="mode-tab active" data-mode="hotkeys"><span data-i18n="tab.hotkeys">Hotkeys</span> <span class="tab-badge" id="tab-badge-hotkeys"></span></button>
+          <button type="button" class="mode-tab" data-mode="hotstrings"><span data-i18n="tab.hotstrings">Hotstrings</span> <span class="tab-badge" id="tab-badge-hotstrings"></span></button>
+          <button type="button" class="mode-tab" data-mode="remap"><span data-i18n="tab.remap">Remapping</span> <span class="tab-badge" id="tab-badge-remap"></span></button>
         </div>
 
         <!-- NEW HOTKEY FORM (Hotkeys mode) -->
         <section class="panel panel-wide mode-section" id="mode-section-hotkeys">
-          <h2 id="form-title">New hotkey</h2>
+          <h2 id="form-title" data-i18n="form.hotkey.new">New hotkey</h2>
 
           <div class="field-group">
-            <label>Selected hotkey</label>
+            <label data-i18n="form.selectedHotkey">Selected hotkey</label>
             <div class="selected-hotkey-row">
               <input
                 type="text"
                 id="selected-hotkey-display"
                 readonly
+                tabindex="-1"
                 placeholder="Click keys below to build a hotkey..."
+                data-i18n-placeholder="placeholder.selectedHotkey"
               />
-              <button id="clear-hotkey-btn" class="btn btn-secondary">Clear</button>
+              <button id="clear-hotkey-btn" class="btn btn-secondary" data-i18n="button.clear">Clear</button>
             </div>
+          </div>
+
+          <div class="keyboard-settings">
+            <label class="checkbox keyboard-distinguish-toggle">
+              <input type="checkbox" class="distinguish-sides-toggle" />
+              <span data-i18n="settings.distinguishSides">Distinguish left/right keys</span>
+            </label>
+            <label class="keyboard-layout-group">
+              <span data-i18n="settings.keyboardLayout">Keyboard layout</span>
+              <select class="keyboard-layout-select">
+                <option value="qwerty">QWERTY</option>
+                <option value="qwertz">QWERTZ</option>
+                <option value="azerty">AZERTY</option>
+              </select>
+            </label>
           </div>
 
           <!-- VISUAL KEYBOARD -->
@@ -187,134 +191,154 @@
           </div>
 
           <div class="field-group">
-            <label for="action-type">Action</label>
+            <label for="action-type" data-i18n="form.action">Action</label>
             <select id="action-type">
-              <option value="send">Send text</option>
-              <option value="run">Open app / file</option>
-              <option value="url">Open URL</option>
-              <option value="command">Run command</option>
+              <option value="send" data-i18n="action.send.option">Send text</option>
+              <option value="run" data-i18n="action.run.option">Open app / file</option>
+              <option value="url" data-i18n="action.url.option">Open URL</option>
+              <option value="command" data-i18n="action.command.option">Run command</option>
             </select>
           </div>
 
           <div class="field-group" id="action-value-group">
-            <label for="action-value" id="action-value-label">Text to send</label>
+            <label for="action-value" id="action-value-label" data-i18n="action.send.label">Text to send</label>
             <div class="action-value-row">
               <textarea
                 id="action-value"
                 placeholder="Enter text..."
+                data-i18n-placeholder="action.send.placeholder"
                 rows="4"
               ></textarea>
-              <button type="button" id="browse-file-btn" class="btn btn-secondary hidden">Browse...</button>
+              <button type="button" id="browse-file-btn" class="btn btn-secondary hidden" data-i18n="button.browse">Browse...</button>
             </div>
-            <p class="hint" id="action-value-hint">
+            <p class="hint" id="action-value-hint" data-i18n="action.send.hint">
               This text will be typed when the hotkey is pressed.
             </p>
           </div>
 
           <div class="field-group hidden" id="send-mode-group">
-            <label class="checkbox" title="Switches this hotkey to the older Event method instead of the faster Input method — try this only if Input mode causes issues in a specific app.">
+            <label class="checkbox" title="Switches this hotkey to the older Event method instead of the faster Input method — try this only if Input mode causes issues in a specific app." data-i18n-title="sendMode.event.title">
               <input type="checkbox" id="send-mode-event-toggle" />
-              Use Event send mode instead of Input
+              <span data-i18n="sendMode.event">Use Event send mode instead of Input</span>
             </label>
           </div>
 
           <div class="field-group">
-            <label for="comment-input">Comment (optional)</label>
+            <label for="comment-input" data-i18n="form.comment">Comment (optional)</label>
             <input
               type="text"
               id="comment-input"
               placeholder="e.g. Quick open email"
+              data-i18n-placeholder="placeholder.comment.hotkey"
             />
           </div>
 
           <div class="button-row">
-            <button id="add-hotkey-btn" class="btn btn-primary">+ Add hotkey</button>
-            <button id="cancel-edit-btn" class="btn btn-secondary hidden">Cancel edit</button>
+            <button id="add-hotkey-btn" class="btn btn-primary" data-i18n="button.addHotkey">+ Add hotkey</button>
+            <button id="cancel-edit-btn" class="btn btn-secondary hidden" data-i18n="button.cancelEdit">Cancel edit</button>
           </div>
           <p id="form-error" class="error-msg"></p>
         </section>
 
         <!-- NEW HOTSTRING FORM (Hotstrings mode) -->
         <section class="panel panel-wide mode-section hidden" id="mode-section-hotstrings">
-          <h2 id="hotstring-form-title">New hotstring</h2>
+          <h2 id="hotstring-form-title" data-i18n="form.hotstring.new">New hotstring</h2>
 
           <div class="field-group">
-            <label for="hotstring-trigger-input">Trigger</label>
+            <label for="hotstring-trigger-input" data-i18n="form.hotstring.trigger">Trigger</label>
             <input
               type="text"
               id="hotstring-trigger-input"
               placeholder="e.g. btw"
+              data-i18n-placeholder="placeholder.hotstring.trigger"
               maxlength="50"
             />
-            <p class="hint">The abbreviation you'll type to trigger the replacement.</p>
+            <p class="hint" data-i18n="hint.hotstring.trigger">The abbreviation you'll type to trigger the replacement.</p>
           </div>
 
           <div class="field-group">
-            <label for="hotstring-replacement-input">Replacement</label>
+            <label for="hotstring-replacement-input" data-i18n="form.hotstring.replacement">Replacement</label>
             <input
               type="text"
               id="hotstring-replacement-input"
               placeholder="e.g. by the way"
+              data-i18n-placeholder="placeholder.hotstring.replacement"
             />
-            <p class="hint">The text that will replace the trigger once it's typed.</p>
+            <p class="hint" data-i18n="hint.hotstring.replacement">The text that will replace the trigger once it's typed.</p>
           </div>
 
           <div class="field-group">
-            <label>Options</label>
+            <label data-i18n="form.hotstring.options">Options</label>
             <div class="checkbox-row">
-              <label class="checkbox" title="Replaces the trigger as soon as it's typed, without needing to press Enter, Space, or Tab afterwards.">
+              <label class="checkbox" title="Replaces the trigger as soon as it's typed, without needing to press Enter, Space, or Tab afterwards." data-i18n-title="hotstring.auto.title">
                 <input type="checkbox" id="hotstring-opt-auto" />
-                Auto-replace (*)
+                <span data-i18n="hotstring.auto">Auto-replace (*)</span>
               </label>
-              <label class="checkbox" title="The trigger must match the exact capitalization you typed (e.g. &quot;Btw&quot; won't match &quot;btw&quot;).">
+              <label class="checkbox" title="The trigger must match the exact capitalization you typed (e.g. &quot;Btw&quot; won't match &quot;btw&quot;)." data-i18n-title="hotstring.case.title">
                 <input type="checkbox" id="hotstring-opt-case" />
-                Case-sensitive (C)
+                <span data-i18n="hotstring.case">Case-sensitive (C)</span>
               </label>
-              <label class="checkbox" title="Allows the trigger to fire even when it's part of a longer word, not just on its own.">
+              <label class="checkbox" title="Allows the trigger to fire even when it's part of a longer word, not just on its own." data-i18n-title="hotstring.inside.title">
                 <input type="checkbox" id="hotstring-opt-inside" />
-                Inside other words (?)
+                <span data-i18n="hotstring.inside">Inside other words (?)</span>
               </label>
-              <label class="checkbox" title="Sends the replacement text literally, without interpreting things like {Enter} as key presses.">
+              <label class="checkbox" title="Sends the replacement text literally, without interpreting things like {Enter} as key presses." data-i18n-title="hotstring.raw.title">
                 <input type="checkbox" id="hotstring-opt-raw" />
-                Raw text (R)
+                <span data-i18n="hotstring.raw">Raw text (R)</span>
               </label>
             </div>
           </div>
 
           <div class="field-group">
-            <label for="hotstring-comment-input">Comment (optional)</label>
+            <label for="hotstring-comment-input" data-i18n="form.comment">Comment (optional)</label>
             <input
               type="text"
               id="hotstring-comment-input"
               placeholder="e.g. Common abbreviation"
+              data-i18n-placeholder="placeholder.comment.hotstring"
             />
           </div>
 
           <div class="button-row">
-            <button id="add-hotstring-btn" class="btn btn-primary">+ Add hotstring</button>
-            <button id="cancel-hotstring-edit-btn" class="btn btn-secondary hidden">Cancel edit</button>
+            <button id="add-hotstring-btn" class="btn btn-primary" data-i18n="button.addHotstring">+ Add hotstring</button>
+            <button id="cancel-hotstring-edit-btn" class="btn btn-secondary hidden" data-i18n="button.cancelEdit">Cancel edit</button>
           </div>
           <p id="hotstring-form-error" class="error-msg"></p>
         </section>
 
         <!-- NEW REMAP FORM (Remapping mode) -->
         <section class="panel panel-wide mode-section hidden" id="mode-section-remap">
-          <h2 id="remap-form-title">New key remap</h2>
+          <h2 id="remap-form-title" data-i18n="form.remap.new">New key remap</h2>
 
           <div class="remap-target-row">
             <div class="remap-target-col">
-              <label>From key</label>
+              <label data-i18n="form.remap.from">From key</label>
               <button type="button" class="remap-target-btn active" id="remap-target-from" data-target="from">
-                <span id="remap-from-display">Click here, then pick a key</span>
+                <span id="remap-from-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
               </button>
             </div>
             <div class="remap-arrow">&rarr;</div>
             <div class="remap-target-col">
-              <label>To key</label>
+              <label data-i18n="form.remap.to">To key</label>
               <button type="button" class="remap-target-btn" id="remap-target-to" data-target="to">
-                <span id="remap-to-display">Click here, then pick a key</span>
+                <span id="remap-to-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
               </button>
             </div>
+          </div>
+
+          <div class="keyboard-settings">
+            <label class="checkbox keyboard-distinguish-toggle">
+              <input type="checkbox" class="distinguish-sides-toggle" />
+              <span data-i18n="settings.distinguishSides">Distinguish left/right keys (Ctrl, Shift, Alt, Win)</span>
+            </label>
+            <label class="keyboard-layout-group">
+              <span data-i18n="settings.keyboardLayout">Keyboard layout</span>
+              <select class="keyboard-layout-select">
+                <option value="qwerty">QWERTY</option>
+                <option value="qwertz">QWERTZ</option>
+                <option value="azerty">AZERTY</option>
+              </select>
+            </label>
           </div>
 
           <!-- VISUAL KEYBOARD (Remapping mode) -->
@@ -405,53 +429,54 @@
           </div>
 
           <div class="field-group">
-            <label for="remap-comment-input">Comment (optional)</label>
+            <label for="remap-comment-input" data-i18n="form.comment">Comment (optional)</label>
             <input
               type="text"
               id="remap-comment-input"
               placeholder="e.g. CapsLock as Escape"
+              data-i18n-placeholder="placeholder.comment.remap"
             />
           </div>
 
           <div class="button-row">
-            <button id="add-remap-btn" class="btn btn-primary">+ Add remap</button>
-            <button id="cancel-remap-edit-btn" class="btn btn-secondary hidden">Cancel edit</button>
+            <button id="add-remap-btn" class="btn btn-primary" data-i18n="button.addRemap">+ Add remap</button>
+            <button id="cancel-remap-edit-btn" class="btn btn-secondary hidden" data-i18n="button.cancelEdit">Cancel edit</button>
           </div>
           <p id="remap-form-error" class="error-msg"></p>
         </section>
 
         <!-- ADDED HOTKEYS LIST -->
         <section class="panel mode-section" id="list-section-hotkeys">
-          <h2>Added hotkeys <span id="hotkey-count" class="count-badge">0</span></h2>
+          <h2><span data-i18n="list.hotkeys.title">Added hotkeys</span> <span id="hotkey-count" class="count-badge">0</span></h2>
           <ul id="hotkey-list" class="hotkey-list">
-            <li class="empty-state">No hotkeys added yet. Use the keyboard above.</li>
+            <li class="empty-state" data-i18n="empty.hotkeys">No hotkeys added yet. Use the keyboard above.</li>
           </ul>
         </section>
 
         <!-- ADDED HOTSTRINGS LIST -->
         <section class="panel mode-section hidden" id="list-section-hotstrings">
-          <h2>Added hotstrings <span id="hotstring-count" class="count-badge">0</span></h2>
+          <h2><span data-i18n="list.hotstrings.title">Added hotstrings</span> <span id="hotstring-count" class="count-badge">0</span></h2>
           <ul id="hotstring-list" class="hotkey-list">
-            <li class="empty-state">No hotstrings added yet. Fill out the form above.</li>
+            <li class="empty-state" data-i18n="empty.hotstrings">No hotstrings added yet. Fill out the form above.</li>
           </ul>
         </section>
 
         <!-- ADDED REMAPS LIST -->
         <section class="panel mode-section hidden" id="list-section-remap">
-          <h2>Added remaps <span id="remap-count" class="count-badge">0</span></h2>
+          <h2><span data-i18n="list.remaps.title">Added remaps</span> <span id="remap-count" class="count-badge">0</span></h2>
           <ul id="remap-list" class="hotkey-list">
-            <li class="empty-state">No remaps added yet. Use the keyboard above.</li>
+            <li class="empty-state" data-i18n="empty.remaps">No remaps added yet. Use the keyboard above.</li>
           </ul>
         </section>
 
         <!-- SCRIPT PREVIEW -->
         <section class="panel">
-          <h2>Script preview (.ahk)</h2>
+          <h2 data-i18n="preview.title">Script preview (.ahk)</h2>
           <textarea id="script-preview" readonly spellcheck="false"></textarea>
           <div class="button-row">
-            <button id="open-file-btn" class="btn btn-secondary">Open existing .ahk file</button>
-            <button id="copy-btn" class="btn btn-secondary">Copy to clipboard</button>
-            <button id="save-btn" class="btn btn-primary">Save as .ahk</button>
+            <button id="open-file-btn" class="btn btn-secondary" data-i18n="button.openFile">Open existing .ahk file</button>
+            <button id="copy-btn" class="btn btn-secondary" data-i18n="button.copy">Copy to clipboard</button>
+            <button id="save-btn" class="btn btn-primary" data-i18n="button.save">Save as .ahk</button>
           </div>
           <p id="action-status" class="status-msg"></p>
         </section>

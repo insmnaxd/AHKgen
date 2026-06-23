@@ -1,11 +1,12 @@
 // --- App version ---
 
-const AHKGEN_VERSION = "v0.9.3";
+const AHKGEN_VERSION = "v1.0.0-alpha.0";
 
 const { writeTextFile, readTextFile } = window.__TAURI__.fs;
 const { save, open } = window.__TAURI__.dialog;
 const { writeText } = window.__TAURI__.clipboardManager;
 const { getCurrentWindow } = window.__TAURI__.window;
+const { invoke } = window.__TAURI__.core;
 
 // --- App state ---
 let hotkeys = [];
@@ -32,11 +33,12 @@ let editingHotstringIndex = null; // for hotstrings
 
 // --- DOM elements ---
 let modeTabs;
-let keyboardLayoutSelect;
+let keyboardLayoutSelects;
+let languageSelect;
 let themeToggleCheckbox;
 let sendModeEventToggle, sendModeGroup;
 let tabBadgeHotkeys, tabBadgeHotstrings, tabBadgeRemap;
-let distinguishSidesToggle;
+let distinguishSidesToggles;
 let modeSectionHotkeys, modeSectionHotstrings, modeSectionRemap;
 let listSectionHotkeys, listSectionHotstrings, listSectionRemap;
 
@@ -69,29 +71,227 @@ let remapListEl, remapCountEl;
 let scriptPreviewEl;
 let copyBtn, saveBtn, openFileBtn, actionStatusEl;
 
+// --- Localization ---
+
+const DEFAULT_LANGUAGE = "en";
+const SUPPORTED_LANGUAGES = ["en", "pl"];
+const TRANSLATION_FILES = {
+  en: "./i18n/en.json",
+  pl: "./i18n/pl.json",
+};
+const DEFAULT_USER_CONFIG = {
+  language: null,
+  theme: null,
+  keyboardLayout: null,
+};
+const LEGACY_STORAGE_KEYS = {
+  language: "ahkgen.language",
+  theme: "ahkgen.theme",
+  keyboardLayout: "ahkgen.keyboardLayout",
+};
+
+let currentLanguage = DEFAULT_LANGUAGE;
+let userConfig = { ...DEFAULT_USER_CONFIG };
+
+const I18N = {};
+
 // Field configuration for each action type (labels, placeholders, hints)
 const ACTION_CONFIG = {
   send: {
-    label: "Text to send",
-    placeholder: "Enter text...",
-    hint: "This text will be typed when the hotkey is pressed.",
+    labelKey: "action.send.label",
+    placeholderKey: "action.send.placeholder",
+    hintKey: "action.send.hint",
   },
   run: {
-    label: "Path to app / file",
-    placeholder: 'e.g. "C:\\Program Files\\Notepad++\\notepad++.exe"',
-    hint: "Full path to the program or file that should be opened.",
+    labelKey: "action.run.label",
+    placeholderKey: "action.run.placeholder",
+    hintKey: "action.run.hint",
   },
   url: {
-    label: "URL address",
-    placeholder: "e.g. https://github.com",
-    hint: "Web address that will open in the default browser.",
+    labelKey: "action.url.label",
+    placeholderKey: "action.url.placeholder",
+    hintKey: "action.url.hint",
   },
   command: {
-    label: "Command to run",
-    placeholder: "e.g. shutdown /s /t 0",
-    hint: "Raw system command that will be executed (Run).",
+    labelKey: "action.command.label",
+    placeholderKey: "action.command.placeholder",
+    hintKey: "action.command.hint",
   },
 };
+
+function getLegacyPreference(key) {
+  try {
+    return localStorage.getItem(LEGACY_STORAGE_KEYS[key]);
+  } catch (err) {
+    return null;
+  }
+}
+
+function normalizeUserConfig(config) {
+  return {
+    language: resolveSupportedLanguage(config?.language) || null,
+    theme: config?.theme === "light" || config?.theme === "dark" ? config.theme : null,
+    keyboardLayout: Object.prototype.hasOwnProperty.call(LAYOUT_KEY_MAPS, config?.keyboardLayout)
+      ? config.keyboardLayout
+      : null,
+  };
+}
+
+async function loadUserConfig() {
+  try {
+    const loadedConfig = await invoke("load_user_config");
+    userConfig = normalizeUserConfig(loadedConfig);
+    migrateLegacyPreferences();
+  } catch (err) {
+    console.warn("Could not load user config:", err);
+    userConfig = { ...DEFAULT_USER_CONFIG };
+    migrateLegacyPreferences();
+  }
+}
+
+function migrateLegacyPreferences() {
+  const migratedConfig = { ...userConfig };
+
+  if (!migratedConfig.language) {
+    migratedConfig.language = resolveSupportedLanguage(getLegacyPreference("language"));
+  }
+  if (!migratedConfig.theme) {
+    const theme = getLegacyPreference("theme");
+    migratedConfig.theme = theme === "light" || theme === "dark" ? theme : null;
+  }
+  if (!migratedConfig.keyboardLayout) {
+    const keyboardLayout = getLegacyPreference("keyboardLayout");
+    migratedConfig.keyboardLayout = Object.prototype.hasOwnProperty.call(LAYOUT_KEY_MAPS, keyboardLayout)
+      ? keyboardLayout
+      : null;
+  }
+
+  const normalizedConfig = normalizeUserConfig(migratedConfig);
+  const changed = JSON.stringify(normalizedConfig) !== JSON.stringify(userConfig);
+  userConfig = normalizedConfig;
+
+  if (changed) saveUserConfig();
+}
+
+function updateUserConfig(patch) {
+  userConfig = normalizeUserConfig({ ...userConfig, ...patch });
+  saveUserConfig();
+}
+
+function saveUserConfig() {
+  invoke("save_user_config", { config: userConfig }).catch((err) => {
+    console.warn("Could not save user config:", err);
+  });
+}
+
+async function loadTranslations() {
+  await Promise.all(
+    Object.entries(TRANSLATION_FILES).map(async ([language, filePath]) => {
+      const response = await fetch(filePath);
+      if (!response.ok) {
+        throw new Error(`Could not load translation file ${filePath}: ${response.status}`);
+      }
+      I18N[language] = await response.json();
+    })
+  );
+}
+
+function t(key, values = {}) {
+  const template = I18N[currentLanguage]?.[key] ?? I18N[DEFAULT_LANGUAGE]?.[key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? `{${name}}`);
+}
+
+function resolveSupportedLanguage(locale) {
+  if (!locale) return null;
+  const normalized = locale.toLowerCase();
+  if (SUPPORTED_LANGUAGES.includes(normalized)) return normalized;
+
+  const base = normalized.split("-")[0];
+  return SUPPORTED_LANGUAGES.includes(base) ? base : null;
+}
+
+function detectSystemLanguage() {
+  const candidates = Array.isArray(navigator.languages) && navigator.languages.length > 0
+    ? navigator.languages
+    : [navigator.language];
+
+  for (const locale of candidates) {
+    const supported = resolveSupportedLanguage(locale);
+    if (supported) return supported;
+  }
+
+  return DEFAULT_LANGUAGE;
+}
+
+function getSavedLanguagePreference() {
+  return resolveSupportedLanguage(userConfig.language);
+}
+
+function saveLanguagePreference(language) {
+  updateUserConfig({ language });
+}
+
+function setLanguage(language, persist = false) {
+  currentLanguage = resolveSupportedLanguage(language) || DEFAULT_LANGUAGE;
+  if (persist) saveLanguagePreference(currentLanguage);
+  applyTranslations();
+}
+
+function initLanguage() {
+  setLanguage(getSavedLanguagePreference() || detectSystemLanguage());
+}
+
+function applyTranslations() {
+  document.documentElement.lang = currentLanguage;
+  if (languageSelect) languageSelect.value = currentLanguage;
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+
+  if (actionType) handleActionTypeChange();
+  updateFormModeLabels();
+  if (remapFromDisplay && remapToDisplay) updateRemapDisplays();
+  updateTitlebarMaximizeLabel();
+}
+
+function updateFormModeLabels() {
+  if (formTitle) {
+    formTitle.textContent = t(editingIndex === null ? "form.hotkey.new" : "form.hotkey.edit");
+  }
+  if (addBtn) {
+    addBtn.textContent = t(editingIndex === null ? "button.addHotkey" : "button.saveChanges");
+  }
+  if (hotstringFormTitle) {
+    hotstringFormTitle.textContent = t(editingHotstringIndex === null ? "form.hotstring.new" : "form.hotstring.edit");
+  }
+  if (addHotstringBtn) {
+    addHotstringBtn.textContent = t(editingHotstringIndex === null ? "button.addHotstring" : "button.saveChanges");
+  }
+  if (remapFormTitle) {
+    remapFormTitle.textContent = t(editingRemapIndex === null ? "form.remap.new" : "form.remap.edit");
+  }
+  if (addRemapBtn) {
+    addRemapBtn.textContent = t(editingRemapIndex === null ? "button.addRemap" : "button.saveChanges");
+  }
+}
+
+function updateTitlebarMaximizeLabel() {
+  const maximizeBtn = document.querySelector("#titlebar-maximize");
+  if (!maximizeBtn || !maximizeBtn.dataset.maximized) return;
+
+  maximizeBtn.title = maximizeBtn.dataset.maximized === "true" ? t("titlebar.restore") : t("titlebar.maximize");
+  maximizeBtn.setAttribute("aria-label", maximizeBtn.title);
+}
 
 // Whether to distinguish left/right variants of Ctrl, Shift, Alt, Win (global setting)
 let distinguishSides = false;
@@ -104,13 +304,14 @@ const MODIFIER_SYMBOLS = {
   Win: "#",
 };
 
-// Maps a *side-specific* key name to its AHK v1 left/right-aware symbol (used when distinguishSides is on).
-// AltGr is physically LCtrl+RAlt on most layouts, hence the combined symbol.
+// Maps a side-specific key name to its AHK v1 symbol (used when distinguishSides is on).
+// Ctrl/Shift/Win get left/right-aware symbols. Plain Alt intentionally stays "!" because
+// AltGr has its own distinct AHK v1 symbol, <^>!, and should not collapse into Alt.
 const SIDE_MODIFIER_SYMBOLS = {
   LCtrl: "<^",
   RCtrl: ">^",
-  LAlt: "<!",
-  RAlt: ">!",
+  LAlt: "!",
+  RAlt: "!",
   LShift: "<+",
   RShift: ">+",
   LWin: "<#",
@@ -119,7 +320,8 @@ const SIDE_MODIFIER_SYMBOLS = {
 };
 
 // Every side-specific key name maps back to its generic family, used when distinguishSides is off
-// (e.g. LCtrl and RCtrl both collapse down to the generic "Ctrl" symbol).
+// (e.g. LCtrl and RCtrl both collapse down to the generic "Ctrl" symbol). AltGr is deliberately
+// its own family so it never lights up or toggles the plain Alt key.
 const SIDE_KEY_TO_GENERIC = {
   LCtrl: "Ctrl",
   RCtrl: "Ctrl",
@@ -129,13 +331,15 @@ const SIDE_KEY_TO_GENERIC = {
   RShift: "Shift",
   LWin: "Win",
   RWin: "Win",
-  AltGr: "Alt", // when not distinguishing sides, AltGr is treated as a plain Alt press
+  AltGr: "AltGr",
 };
 
 // All recognized modifier key names (side-specific identifiers used as data-key values on buttons)
 const ALL_MODIFIER_KEYS = ["LCtrl", "RCtrl", "LAlt", "RAlt", "LShift", "RShift", "LWin", "RWin", "AltGr"];
 
-// Reverse lookup: any AHK prefix symbol sequence -> side-specific key name (longest match first).
+// Reverse lookup: any AHK prefix symbol sequence -> key name (longest match first).
+// Generic AHK symbols map to the left-side representative so editing a saved generic
+// hotkey still lights up a concrete key in the visual keyboard.
 // Ordered so that multi-character symbols like "<^>!" and "<^" are tried before single-char ones.
 const PREFIX_SYMBOL_TABLE = [
   ["<^>!", "AltGr"],
@@ -147,10 +351,10 @@ const PREFIX_SYMBOL_TABLE = [
   [">+", "RShift"],
   ["<#", "LWin"],
   [">#", "RWin"],
-  ["^", "Ctrl"],
-  ["!", "Alt"],
-  ["+", "Shift"],
-  ["#", "Win"],
+  ["^", "LCtrl"],
+  ["!", "LAlt"],
+  ["+", "LShift"],
+  ["#", "LWin"],
 ];
 
 // --- Shared helpers: building/parsing a "modifiers + key" prefix string ---
@@ -162,8 +366,13 @@ function buildPrefix(mods, key) {
 
   if (distinguishSides) {
     // Side-specific output, in a stable order: Ctrl, Alt, Shift, Win variants, then AltGr
+    const appendedSymbols = new Set();
     for (const modKey of ["LCtrl", "RCtrl", "LAlt", "RAlt", "LShift", "RShift", "LWin", "RWin", "AltGr"]) {
-      if (mods.has(modKey)) prefix += SIDE_MODIFIER_SYMBOLS[modKey];
+      const symbol = SIDE_MODIFIER_SYMBOLS[modKey];
+      if (mods.has(modKey) && !appendedSymbols.has(symbol)) {
+        prefix += symbol;
+        appendedSymbols.add(symbol);
+      }
     }
   } else {
     // Generic output: collapse any side-specific key down to its family, de-duplicating.
@@ -246,20 +455,13 @@ function applyKeyboardLayout(layout) {
 }
 
 function saveKeyboardLayoutPreference(layout) {
-  try {
-    localStorage.setItem("ahkgen.keyboardLayout", layout);
-  } catch (err) {
-    // localStorage can fail in rare environments (e.g. storage disabled) - not critical, just skip persisting
-    console.warn("Could not save keyboard layout preference:", err);
-  }
+  updateUserConfig({ keyboardLayout: layout });
 }
 
 function loadKeyboardLayoutPreference() {
-  try {
-    return localStorage.getItem("ahkgen.keyboardLayout") || "qwerty";
-  } catch (err) {
-    return "qwerty";
-  }
+  return Object.prototype.hasOwnProperty.call(LAYOUT_KEY_MAPS, userConfig.keyboardLayout)
+    ? userConfig.keyboardLayout
+    : "qwerty";
 }
 
 // --- Light / dark theme ---
@@ -268,19 +470,11 @@ function loadKeyboardLayoutPreference() {
 // the OS setting from then on (no "auto" state to go back to, by design).
 
 function getSavedThemePreference() {
-  try {
-    return localStorage.getItem("ahkgen.theme"); // "light" | "dark" | null (never set)
-  } catch (err) {
-    return null;
-  }
+  return userConfig.theme; // "light" | "dark" | null (never set)
 }
 
 function saveThemePreference(theme) {
-  try {
-    localStorage.setItem("ahkgen.theme", theme);
-  } catch (err) {
-    console.warn("Could not save theme preference:", err);
-  }
+  updateUserConfig({ theme });
 }
 
 function systemPrefersDark() {
@@ -343,6 +537,9 @@ function updateModifierLabels() {
 
 function setDistinguishSides(value) {
   distinguishSides = value;
+  distinguishSidesToggles.forEach((toggle) => {
+    toggle.checked = value;
+  });
 
   // Only clear the *modifier* selections on both keyboards (Ctrl/Alt/Shift/Win/AltGr) - switching
   // this setting changes what their symbols/labels mean. The main key (e.g. "j") is unaffected
@@ -492,8 +689,8 @@ function updateRemapKeyboardVisuals() {
 function updateRemapDisplays() {
   const fromPrefix = buildPrefix(remapFromMods, remapFromKey);
   const toPrefix = buildPrefix(remapToMods, remapToKey);
-  remapFromDisplay.textContent = fromPrefix || "Click here, then pick a key";
-  remapToDisplay.textContent = toPrefix || "Click here, then pick a key";
+  remapFromDisplay.textContent = fromPrefix || t("remap.pickKey");
+  remapToDisplay.textContent = toPrefix || t("remap.pickKey");
 }
 
 function clearRemapSelection() {
@@ -659,6 +856,11 @@ function parseActionLine(line) {
   const runMatch = trimmed.match(/^Run,\s*(.*)$/i);
   if (runMatch) {
     const raw = runMatch[1];
+    const isQuoted = raw.trim().startsWith('"') && raw.trim().endsWith('"');
+    if (!isQuoted) {
+      return { actionType: "command", actionValue: raw.trim() };
+    }
+
     const unescaped = unescapeFromRun(raw);
     const looksLikeUrl = /^https?:\/\//i.test(unescaped);
     return {
@@ -680,8 +882,7 @@ function parseAhkScript(rawText) {
   if (!hasSignature) {
     return {
       success: false,
-      error:
-        "This file wasn't created by AHK Generator (missing the \"Made with AHKgen\" signature), so it can't be parsed reliably. Only files generated by this app can be re-opened.",
+      error: t("error.missingSignature"),
     };
   }
 
@@ -794,13 +995,13 @@ function renderHotkeyList() {
   hotkeyCountEl.textContent = hotkeys.length;
 
   if (hotkeys.length === 0) {
-    hotkeyListEl.innerHTML = `<li class="empty-state">No hotkeys added yet. Use the keyboard above.</li>`;
+    hotkeyListEl.innerHTML = `<li class="empty-state">${escapeHtml(t("empty.hotkeys"))}</li>`;
     return;
   }
 
   hotkeyListEl.innerHTML = hotkeys
     .map((hk, index) => {
-      const actionLabel = ACTION_CONFIG[hk.actionType].label;
+      const actionLabel = t(ACTION_CONFIG[hk.actionType].labelKey);
       const editingClass = index === editingIndex ? " editing" : "";
       const sendModeTag =
         hk.actionType === "send" && hk.sendMode && hk.sendMode !== "Input"
@@ -809,13 +1010,13 @@ function renderHotkeyList() {
       return `
         <li class="hotkey-item${editingClass}" data-index="${index}">
           <div class="hotkey-item-main">
-            <span class="hotkey-badge">${hk.prefix}</span>
+            <span class="hotkey-badge">${escapeHtml(hk.prefix)}</span>
             <span class="hotkey-desc">${actionLabel}: <strong>${escapeHtml(hk.actionValue)}</strong>${sendModeTag}</span>
             ${hk.comment ? `<span class="hotkey-comment">"${escapeHtml(hk.comment)}"</span>` : ""}
           </div>
           <div class="hotkey-item-actions">
-            <button class="btn-edit" data-index="${index}" title="Edit">Edit</button>
-            <button class="btn-remove" data-index="${index}" title="Remove">&times;</button>
+            <button class="btn-edit" data-index="${index}" title="${escapeHtml(t("button.edit"))}">${escapeHtml(t("button.edit"))}</button>
+            <button class="btn-remove" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
           </div>
         </li>
       `;
@@ -847,7 +1048,7 @@ function renderRemapList() {
   remapCountEl.textContent = remaps.length;
 
   if (remaps.length === 0) {
-    remapListEl.innerHTML = `<li class="empty-state">No remaps added yet. Use the keyboard above.</li>`;
+    remapListEl.innerHTML = `<li class="empty-state">${escapeHtml(t("empty.remaps"))}</li>`;
     return;
   }
 
@@ -857,14 +1058,14 @@ function renderRemapList() {
       return `
         <li class="hotkey-item${editingClass}" data-index="${index}">
           <div class="hotkey-item-main">
-            <span class="hotkey-badge">${rm.fromPrefix}</span>
+            <span class="hotkey-badge">${escapeHtml(rm.fromPrefix)}</span>
             <span class="remap-arrow-inline">&rarr;</span>
-            <span class="hotkey-badge">${rm.toPrefix}</span>
+            <span class="hotkey-badge">${escapeHtml(rm.toPrefix)}</span>
             ${rm.comment ? `<span class="hotkey-comment">"${escapeHtml(rm.comment)}"</span>` : ""}
           </div>
           <div class="hotkey-item-actions">
-            <button class="btn-edit-remap" data-index="${index}" title="Edit">Edit</button>
-            <button class="btn-remove-remap" data-index="${index}" title="Remove">&times;</button>
+            <button class="btn-edit-remap" data-index="${index}" title="${escapeHtml(t("button.edit"))}">${escapeHtml(t("button.edit"))}</button>
+            <button class="btn-remove-remap" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
           </div>
         </li>
       `;
@@ -896,7 +1097,7 @@ function renderHotstringList() {
   hotstringCountEl.textContent = hotstrings.length;
 
   if (hotstrings.length === 0) {
-    hotstringListEl.innerHTML = `<li class="empty-state">No hotstrings added yet. Fill out the form above.</li>`;
+    hotstringListEl.innerHTML = `<li class="empty-state">${escapeHtml(t("empty.hotstrings"))}</li>`;
     return;
   }
 
@@ -919,8 +1120,8 @@ function renderHotstringList() {
             ${hs.comment ? `<span class="hotkey-comment">"${escapeHtml(hs.comment)}"</span>` : ""}
           </div>
           <div class="hotkey-item-actions">
-            <button class="btn-edit-hotstring" data-index="${index}" title="Edit">Edit</button>
-            <button class="btn-remove-hotstring" data-index="${index}" title="Remove">&times;</button>
+            <button class="btn-edit-hotstring" data-index="${index}" title="${escapeHtml(t("button.edit"))}">${escapeHtml(t("button.edit"))}</button>
+            <button class="btn-remove-hotstring" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
           </div>
         </li>
       `;
@@ -995,8 +1196,8 @@ function startEdit(index) {
   sendModeEventToggle.checked = hk.sendMode === "Event";
   commentInput.value = hk.comment || "";
 
-  formTitle.textContent = "Edit hotkey";
-  addBtn.textContent = "Save changes";
+  formTitle.textContent = t("form.hotkey.edit");
+  addBtn.textContent = t("button.saveChanges");
   cancelEditBtn.classList.remove("hidden");
   clearFormError();
 
@@ -1012,8 +1213,8 @@ function cancelEdit() {
   sendModeEventToggle.checked = false;
   commentInput.value = "";
 
-  formTitle.textContent = "New hotkey";
-  addBtn.textContent = "+ Add hotkey";
+  formTitle.textContent = t("form.hotkey.new");
+  addBtn.textContent = t("button.addHotkey");
   cancelEditBtn.classList.add("hidden");
   clearFormError();
 
@@ -1038,19 +1239,19 @@ function handleAddOrSaveHotkey() {
   const sendMode = type === "send" && sendModeEventToggle.checked ? "Event" : "Input";
 
   if (!selectedKey) {
-    setFormError("Please select a key on the keyboard above.");
+    setFormError(t("error.noHotkeyKey"));
     return;
   }
 
   if (value.length === 0) {
-    setFormError("The action field cannot be empty.");
+    setFormError(t("error.emptyAction"));
     return;
   }
 
   const duplicateIndex = hotkeys.findIndex((hk) => hk.prefix === prefix);
   const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingIndex;
   if (isDuplicate) {
-    setFormError(`Hotkey "${prefix}" is already on the list.`);
+    setFormError(t("error.duplicateHotkey", { prefix }));
     return;
   }
 
@@ -1090,9 +1291,9 @@ function handleActionTypeChange() {
     actionValue = newEl;
   }
 
-  actionValueLabel.textContent = config.label;
-  actionValue.placeholder = config.placeholder;
-  actionValueHint.textContent = config.hint;
+  actionValueLabel.textContent = t(config.labelKey);
+  actionValue.placeholder = t(config.placeholderKey);
+  actionValueHint.textContent = t(config.hintKey);
   browseFileBtn.classList.toggle("hidden", actionType.value !== "run");
   sendModeGroup.classList.toggle("hidden", !isSendText);
 }
@@ -1115,8 +1316,8 @@ function startRemapEdit(index) {
 
   remapCommentInput.value = rm.comment || "";
 
-  remapFormTitle.textContent = "Edit key remap";
-  addRemapBtn.textContent = "Save changes";
+  remapFormTitle.textContent = t("form.remap.edit");
+  addRemapBtn.textContent = t("button.saveChanges");
   cancelRemapEditBtn.classList.remove("hidden");
   clearRemapFormError();
 
@@ -1128,8 +1329,8 @@ function cancelRemapEdit() {
   clearRemapSelection();
   remapCommentInput.value = "";
 
-  remapFormTitle.textContent = "New key remap";
-  addRemapBtn.textContent = "+ Add remap";
+  remapFormTitle.textContent = t("form.remap.new");
+  addRemapBtn.textContent = t("button.addRemap");
   cancelRemapEditBtn.classList.add("hidden");
   clearRemapFormError();
 
@@ -1152,22 +1353,22 @@ function handleAddOrSaveRemap() {
   const comment = remapCommentInput.value.trim();
 
   if (!remapFromKey) {
-    setRemapFormError('Please pick a "From" key on the keyboard above.');
+    setRemapFormError(t("error.remapMissingFrom"));
     return;
   }
   if (!remapToKey) {
-    setRemapFormError('Please pick a "To" key on the keyboard above.');
+    setRemapFormError(t("error.remapMissingTo"));
     return;
   }
   if (fromPrefix === toPrefix) {
-    setRemapFormError('"From" and "To" keys cannot be identical.');
+    setRemapFormError(t("error.remapSame"));
     return;
   }
 
   const duplicateIndex = remaps.findIndex((rm) => rm.fromPrefix === fromPrefix);
   const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingRemapIndex;
   if (isDuplicate) {
-    setRemapFormError(`A remap for "${fromPrefix}" already exists.`);
+    setRemapFormError(t("error.duplicateRemap", { prefix: fromPrefix }));
     return;
   }
 
@@ -1199,8 +1400,8 @@ function startHotstringEdit(index) {
   hotstringOptRaw.checked = hs.rawText;
   hotstringCommentInput.value = hs.comment || "";
 
-  hotstringFormTitle.textContent = "Edit hotstring";
-  addHotstringBtn.textContent = "Save changes";
+  hotstringFormTitle.textContent = t("form.hotstring.edit");
+  addHotstringBtn.textContent = t("button.saveChanges");
   cancelHotstringEditBtn.classList.remove("hidden");
   clearHotstringFormError();
 
@@ -1217,8 +1418,8 @@ function cancelHotstringEdit() {
   hotstringOptRaw.checked = false;
   hotstringCommentInput.value = "";
 
-  hotstringFormTitle.textContent = "New hotstring";
-  addHotstringBtn.textContent = "+ Add hotstring";
+  hotstringFormTitle.textContent = t("form.hotstring.new");
+  addHotstringBtn.textContent = t("button.addHotstring");
   cancelHotstringEditBtn.classList.add("hidden");
   clearHotstringFormError();
 
@@ -1245,15 +1446,19 @@ function handleAddOrSaveHotstring() {
   const comment = hotstringCommentInput.value.trim();
 
   if (trigger.length === 0) {
-    setHotstringFormError("Please enter a trigger.");
+    setHotstringFormError(t("error.hotstringMissingTrigger"));
     return;
   }
   if (/\s/.test(trigger)) {
-    setHotstringFormError("The trigger cannot contain spaces.");
+    setHotstringFormError(t("error.hotstringTriggerSpaces"));
+    return;
+  }
+  if (trigger.includes(":")) {
+    setHotstringFormError(t("error.hotstringTriggerColon"));
     return;
   }
   if (replacement.length === 0) {
-    setHotstringFormError("Please enter a replacement.");
+    setHotstringFormError(t("error.hotstringMissingReplacement"));
     return;
   }
 
@@ -1264,7 +1469,7 @@ function handleAddOrSaveHotstring() {
   );
   const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingHotstringIndex;
   if (isDuplicate) {
-    setHotstringFormError(`A hotstring for "${trigger}" already exists.`);
+    setHotstringFormError(t("error.duplicateHotstring", { trigger }));
     return;
   }
 
@@ -1337,9 +1542,9 @@ function setStatus(msg, isError = false, autoClear = true) {
 async function handleCopy() {
   try {
     await writeText(scriptPreviewEl.value);
-    setStatus("Copied to clipboard.");
+    setStatus(t("status.copied"));
   } catch (err) {
-    setStatus("Error while copying: " + err, true);
+    setStatus(t("status.copyError", { error: err }), true);
   }
 }
 
@@ -1354,9 +1559,9 @@ async function handleSave() {
 
     const BOM = "\uFEFF";
     await writeTextFile(filePath, BOM + scriptPreviewEl.value);
-    setStatus("Saved: " + filePath);
+    setStatus(t("status.saved", { path: filePath }));
   } catch (err) {
-    setStatus("Error while saving: " + err, true);
+    setStatus(t("status.saveError", { error: err }), true);
   }
 }
 
@@ -1378,7 +1583,7 @@ async function handleOpenFile() {
     }
 
     if (result.hotkeys.length === 0 && result.remaps.length === 0 && result.hotstrings.length === 0) {
-      setStatus("No recognizable hotkeys, hotstrings, or remaps were found in this file.", true);
+      setStatus(t("status.noRecognizableEntries"), true);
       return;
     }
 
@@ -1418,21 +1623,21 @@ async function handleOpenFile() {
     renderAll();
 
     const parts = [];
-    if (addedHotkeys > 0) parts.push(`${addedHotkeys} hotkey${addedHotkeys === 1 ? "" : "s"}`);
-    if (addedHotstrings > 0) parts.push(`${addedHotstrings} hotstring${addedHotstrings === 1 ? "" : "s"}`);
-    if (addedRemaps > 0) parts.push(`${addedRemaps} remap${addedRemaps === 1 ? "" : "s"}`);
-    let msg = parts.length > 0 ? `Loaded ${parts.join(", ")} from file.` : "No new entries loaded.";
+    if (addedHotkeys > 0) parts.push(t("count.hotkeys", { count: addedHotkeys }));
+    if (addedHotstrings > 0) parts.push(t("count.hotstrings", { count: addedHotstrings }));
+    if (addedRemaps > 0) parts.push(t("count.remaps", { count: addedRemaps }));
+    let msg = parts.length > 0 ? t("status.loaded", { parts: parts.join(", ") }) : t("status.noNewEntries");
 
     if (result.skippedCount > 0) {
-      msg += ` ${result.skippedCount} block(s) skipped (unrecognized format).`;
+      msg += t("status.skipped", { count: result.skippedCount });
     }
     const totalDuplicates = duplicateHotkeys + duplicateHotstrings + duplicateRemaps;
     if (totalDuplicates > 0) {
-      msg += ` ${totalDuplicates} duplicate(s) ignored.`;
+      msg += t("status.duplicates", { count: totalDuplicates });
     }
     setStatus(msg, false, false);
   } catch (err) {
-    setStatus("Error while opening file: " + err, true);
+    setStatus(t("status.openError", { error: err }), true);
   }
 }
 
@@ -1447,18 +1652,26 @@ async function handleBrowseFile() {
 
     actionValue.value = filePath;
   } catch (err) {
-    setStatus("Error while browsing for a file: " + err, true);
+    setStatus(t("status.browseError", { error: err }), true);
   }
 }
 
-function handleKeyboardLayoutChange() {
-  const layout = keyboardLayoutSelect.value;
+function handleKeyboardLayoutChange(event) {
+  const layout = event.currentTarget.value;
+  keyboardLayoutSelects.forEach((select) => {
+    select.value = layout;
+  });
   applyKeyboardLayout(layout);
   saveKeyboardLayoutPreference(layout);
 
   // Clear any in-progress key selection, since the key positions just changed underneath it
   clearHotkeySelection();
   clearRemapSelection();
+}
+
+function handleLanguageChange() {
+  setLanguage(languageSelect.value, true);
+  renderAll();
 }
 
 // --- Version display ---
@@ -1492,8 +1705,8 @@ function initTitlebar() {
     maximizeBtn.innerHTML = isMaximized
       ? '<svg viewBox="0 0 10 10" width="10" height="10"><rect x="2.5" y="0.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1" /><rect x="0.5" y="2.5" width="7" height="7" fill="var(--bg)" stroke="currentColor" stroke-width="1" /></svg>'
       : '<svg viewBox="0 0 10 10" width="10" height="10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1" /></svg>';
-    maximizeBtn.title = isMaximized ? "Restore" : "Maximize";
-    maximizeBtn.setAttribute("aria-label", maximizeBtn.title);
+    maximizeBtn.dataset.maximized = isMaximized ? "true" : "false";
+    updateTitlebarMaximizeLabel();
   }
 
   appWindow.isMaximized().then(setMaximizeIcon);
@@ -1510,15 +1723,16 @@ function initTitlebar() {
 
 // --- Initialization ---
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   injectVersion();
 
   modeTabs = document.querySelectorAll(".mode-tab");
   tabBadgeHotkeys = document.querySelector("#tab-badge-hotkeys");
   tabBadgeHotstrings = document.querySelector("#tab-badge-hotstrings");
   tabBadgeRemap = document.querySelector("#tab-badge-remap");
-  distinguishSidesToggle = document.querySelector("#distinguish-sides-toggle");
-  keyboardLayoutSelect = document.querySelector("#keyboard-layout-select");
+  distinguishSidesToggles = document.querySelectorAll(".distinguish-sides-toggle");
+  keyboardLayoutSelects = document.querySelectorAll(".keyboard-layout-select");
+  languageSelect = document.querySelector("#language-select");
   themeToggleCheckbox = document.querySelector("#theme-toggle-checkbox");
   sendModeEventToggle = document.querySelector("#send-mode-event-toggle");
   sendModeGroup = document.querySelector("#send-mode-group");
@@ -1627,12 +1841,19 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   // Distinguish left/right keys toggle
-  distinguishSidesToggle.addEventListener("change", () => {
-    setDistinguishSides(distinguishSidesToggle.checked);
+  distinguishSidesToggles.forEach((toggle) => {
+    toggle.addEventListener("change", () => {
+      setDistinguishSides(toggle.checked);
+    });
   });
 
   // Keyboard layout selector
-  keyboardLayoutSelect.addEventListener("change", handleKeyboardLayoutChange);
+  keyboardLayoutSelects.forEach((select) => {
+    select.addEventListener("change", handleKeyboardLayoutChange);
+  });
+
+  // Language selector
+  languageSelect.addEventListener("change", handleLanguageChange);
 
   // Theme toggle
   themeToggleCheckbox.addEventListener("change", handleThemeToggle);
@@ -1642,12 +1863,22 @@ window.addEventListener("DOMContentLoaded", () => {
   saveBtn.addEventListener("click", handleSave);
   openFileBtn.addEventListener("click", handleOpenFile);
 
-  updateModifierLabels();
-  handleActionTypeChange();
+  try {
+    await loadTranslations();
+  } catch (err) {
+    console.warn("Could not load translations:", err);
+  }
+
+  await loadUserConfig();
 
   const savedLayout = loadKeyboardLayoutPreference();
-  keyboardLayoutSelect.value = savedLayout;
+  keyboardLayoutSelects.forEach((select) => {
+    select.value = savedLayout;
+  });
   applyKeyboardLayout(savedLayout);
+
+  initLanguage();
+  updateModifierLabels();
 
   initTheme();
   initTitlebar();
