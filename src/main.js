@@ -1,6 +1,6 @@
 // --- App version ---
 
-const AHKGEN_VERSION = "v1.0.0-alpha.0";
+const AHKGEN_VERSION = "v1.0.0-alpha.1";
 
 const { writeTextFile, readTextFile } = window.__TAURI__.fs;
 const { save, open } = window.__TAURI__.dialog;
@@ -39,7 +39,7 @@ let themeToggleCheckbox;
 let sendModeEventToggle, sendModeGroup;
 let tabBadgeHotkeys, tabBadgeHotstrings, tabBadgeRemap;
 let distinguishSidesToggles;
-let modeSectionHotkeys, modeSectionHotstrings, modeSectionRemap;
+let modeSectionHotkeys, modeSectionHotstrings, modeSectionRemap, modeSectionSettings;
 let listSectionHotkeys, listSectionHotstrings, listSectionRemap;
 
 let keyboardEl;
@@ -69,15 +69,22 @@ let remapFormTitle;
 let remapListEl, remapCountEl;
 
 let scriptPreviewEl;
+let scriptPreviewSection;
 let copyBtn, saveBtn, openFileBtn, actionStatusEl;
+let resetConfigBtn, settingsStatusEl;
 
 // --- Localization ---
 
 const DEFAULT_LANGUAGE = "en";
-const SUPPORTED_LANGUAGES = ["en", "pl"];
+const SUPPORTED_LANGUAGES = ["en", "pl", "es", "de", "fr", "it", "pt"];
 const TRANSLATION_FILES = {
   en: "./i18n/en.json",
   pl: "./i18n/pl.json",
+  es: "./i18n/es.json",
+  de: "./i18n/de.json",
+  fr: "./i18n/fr.json",
+  it: "./i18n/it.json",
+  pt: "./i18n/pt.json",
 };
 const DEFAULT_USER_CONFIG = {
   language: null,
@@ -1007,15 +1014,18 @@ function renderHotkeyList() {
         hk.actionType === "send" && hk.sendMode && hk.sendMode !== "Input"
           ? ` <span class="hotstring-options">[${escapeHtml(hk.sendMode)}]</span>`
           : "";
+      const description = hk.comment
+        ? `<span class="hotkey-desc hotkey-entry-name"><strong>${escapeHtml(hk.comment)}</strong></span>`
+        : `<span class="hotkey-desc">${actionLabel}: <strong>${escapeHtml(hk.actionValue)}</strong>${sendModeTag}</span>`;
       return `
-        <li class="hotkey-item${editingClass}" data-index="${index}">
+        <li class="hotkey-item hotkey-item-expandable hotkey-entry${editingClass}" data-index="${index}" tabindex="0">
           <div class="hotkey-item-main">
-            <span class="hotkey-badge">${escapeHtml(hk.prefix)}</span>
-            <span class="hotkey-desc">${actionLabel}: <strong>${escapeHtml(hk.actionValue)}</strong>${sendModeTag}</span>
-            ${hk.comment ? `<span class="hotkey-comment">"${escapeHtml(hk.comment)}"</span>` : ""}
+            <span class="entry-prefix">
+              <span class="hotkey-badge">${escapeHtml(hk.prefix)}</span>
+            </span>
+            ${description}
           </div>
           <div class="hotkey-item-actions">
-            <button class="btn-edit" data-index="${index}" title="${escapeHtml(t("button.edit"))}">${escapeHtml(t("button.edit"))}</button>
             <button class="btn-remove" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
           </div>
         </li>
@@ -1023,23 +1033,28 @@ function renderHotkeyList() {
     })
     .join("");
 
+  setupEditableEntries(hotkeyListEl, (index) => {
+    if (editingIndex === index) {
+      cancelEdit();
+    } else {
+      startEdit(index);
+    }
+  });
+
   hotkeyListEl.querySelectorAll(".btn-remove").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const idx = parseInt(btn.dataset.index, 10);
-      hotkeys.splice(idx, 1);
-      if (editingIndex !== null) cancelEdit();
-      renderAll();
+      const removingLastEntry = hotkeys.length === 1;
+      animateEntryRemoval(btn.closest(".hotkey-item"), () => {
+        hotkeys.splice(idx, 1);
+        if (editingIndex !== null) cancelEdit();
+        renderAll();
+        if (removingLastEntry) animateEmptyState(hotkeyListEl);
+      }, removingLastEntry);
     });
   });
 
-  hotkeyListEl.querySelectorAll(".btn-edit").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.index, 10);
-      startEdit(idx);
-    });
-  });
 }
 
 // --- Rendering: Remaps list ---
@@ -1055,16 +1070,20 @@ function renderRemapList() {
   remapListEl.innerHTML = remaps
     .map((rm, index) => {
       const editingClass = index === editingRemapIndex ? " editing" : "";
+      const entryName = rm.comment
+        ? `<span class="hotkey-desc hotkey-entry-name"><strong>${escapeHtml(rm.comment)}</strong></span>`
+        : "";
       return `
-        <li class="hotkey-item${editingClass}" data-index="${index}">
+        <li class="hotkey-item hotkey-item-expandable remap-entry${editingClass}" data-index="${index}" tabindex="0">
           <div class="hotkey-item-main">
-            <span class="hotkey-badge">${escapeHtml(rm.fromPrefix)}</span>
-            <span class="remap-arrow-inline">&rarr;</span>
-            <span class="hotkey-badge">${escapeHtml(rm.toPrefix)}</span>
-            ${rm.comment ? `<span class="hotkey-comment">"${escapeHtml(rm.comment)}"</span>` : ""}
+            <span class="entry-prefix">
+              <span class="hotkey-badge">${escapeHtml(rm.fromPrefix)}</span>
+              <span class="remap-arrow-inline">&rarr;</span>
+              <span class="hotkey-badge">${escapeHtml(rm.toPrefix)}</span>
+            </span>
+            ${entryName}
           </div>
           <div class="hotkey-item-actions">
-            <button class="btn-edit-remap" data-index="${index}" title="${escapeHtml(t("button.edit"))}">${escapeHtml(t("button.edit"))}</button>
             <button class="btn-remove-remap" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
           </div>
         </li>
@@ -1072,23 +1091,28 @@ function renderRemapList() {
     })
     .join("");
 
+  setupEditableEntries(remapListEl, (index) => {
+    if (editingRemapIndex === index) {
+      cancelRemapEdit();
+    } else {
+      startRemapEdit(index);
+    }
+  });
+
   remapListEl.querySelectorAll(".btn-remove-remap").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const idx = parseInt(btn.dataset.index, 10);
-      remaps.splice(idx, 1);
-      if (editingRemapIndex !== null) cancelRemapEdit();
-      renderAll();
+      const removingLastEntry = remaps.length === 1;
+      animateEntryRemoval(btn.closest(".hotkey-item"), () => {
+        remaps.splice(idx, 1);
+        if (editingRemapIndex !== null) cancelRemapEdit();
+        renderAll();
+        if (removingLastEntry) animateEmptyState(remapListEl);
+      }, removingLastEntry);
     });
   });
 
-  remapListEl.querySelectorAll(".btn-edit-remap").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.index, 10);
-      startRemapEdit(idx);
-    });
-  });
 }
 
 // --- Rendering: Hotstrings list ---
@@ -1110,17 +1134,22 @@ function renderHotstringList() {
       if (hs.insideWord) optionTags.push("?");
       if (hs.rawText) optionTags.push("R");
       const optionsLabel = optionTags.length > 0 ? ` <span class="hotstring-options">[${optionTags.join(" ")}]</span>` : "";
+      const description = hs.comment
+        ? `<span class="hotkey-desc hotkey-entry-name"><strong>${escapeHtml(hs.comment)}</strong></span>`
+        : `
+            <span class="hotkey-desc"><strong>${escapeHtml(hs.replacement)}</strong>${optionsLabel}</span>
+          `;
 
       return `
-        <li class="hotkey-item${editingClass}" data-index="${index}">
+        <li class="hotkey-item hotkey-item-expandable hotstring-entry${editingClass}" data-index="${index}" tabindex="0">
           <div class="hotkey-item-main">
-            <span class="hotkey-badge">${escapeHtml(hs.trigger)}</span>
-            <span class="remap-arrow-inline">&rarr;</span>
-            <span class="hotkey-desc"><strong>${escapeHtml(hs.replacement)}</strong>${optionsLabel}</span>
-            ${hs.comment ? `<span class="hotkey-comment">"${escapeHtml(hs.comment)}"</span>` : ""}
+            <span class="entry-prefix">
+              <span class="hotkey-badge">${escapeHtml(hs.trigger)}</span>
+              ${hs.comment ? "" : '<span class="remap-arrow-inline">&rarr;</span>'}
+            </span>
+            ${description}
           </div>
           <div class="hotkey-item-actions">
-            <button class="btn-edit-hotstring" data-index="${index}" title="${escapeHtml(t("button.edit"))}">${escapeHtml(t("button.edit"))}</button>
             <button class="btn-remove-hotstring" data-index="${index}" title="${escapeHtml(t("button.remove"))}">&times;</button>
           </div>
         </li>
@@ -1128,23 +1157,28 @@ function renderHotstringList() {
     })
     .join("");
 
+  setupEditableEntries(hotstringListEl, (index) => {
+    if (editingHotstringIndex === index) {
+      cancelHotstringEdit();
+    } else {
+      startHotstringEdit(index);
+    }
+  });
+
   hotstringListEl.querySelectorAll(".btn-remove-hotstring").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const idx = parseInt(btn.dataset.index, 10);
-      hotstrings.splice(idx, 1);
-      if (editingHotstringIndex !== null) cancelHotstringEdit();
-      renderAll();
+      const removingLastEntry = hotstrings.length === 1;
+      animateEntryRemoval(btn.closest(".hotkey-item"), () => {
+        hotstrings.splice(idx, 1);
+        if (editingHotstringIndex !== null) cancelHotstringEdit();
+        renderAll();
+        if (removingLastEntry) animateEmptyState(hotstringListEl);
+      }, removingLastEntry);
     });
   });
 
-  hotstringListEl.querySelectorAll(".btn-edit-hotstring").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.index, 10);
-      startHotstringEdit(idx);
-    });
-  });
 }
 
 function escapeHtml(str) {
@@ -1201,10 +1235,11 @@ function startEdit(index) {
   cancelEditBtn.classList.remove("hidden");
   clearFormError();
 
-  renderHotkeyList();
+  setEditingEntry(hotkeyListEl, index);
 }
 
 function cancelEdit() {
+  const cancelledIndex = editingIndex;
   editingIndex = null;
   clearHotkeySelection();
   actionType.value = "send";
@@ -1218,7 +1253,7 @@ function cancelEdit() {
   cancelEditBtn.classList.add("hidden");
   clearFormError();
 
-  renderHotkeyList();
+  clearEditingEntry(hotkeyListEl, cancelledIndex);
 }
 
 function clearFormError() {
@@ -1257,11 +1292,13 @@ function handleAddOrSaveHotkey() {
 
   const newEntry = { prefix, actionType: type, actionValue: value, sendMode, comment };
 
+  let addedIndex = null;
   if (editingIndex !== null) {
     hotkeys[editingIndex] = newEntry;
     cancelEdit();
   } else {
     hotkeys.push(newEntry);
+    addedIndex = hotkeys.length - 1;
     clearHotkeySelection();
     actionValue.value = "";
     sendModeEventToggle.checked = false;
@@ -1269,6 +1306,7 @@ function handleAddOrSaveHotkey() {
   }
 
   renderAll();
+  if (addedIndex !== null) animateEntryAddition(hotkeyListEl, addedIndex, addedIndex === 0);
 }
 
 function handleActionTypeChange() {
@@ -1321,10 +1359,11 @@ function startRemapEdit(index) {
   cancelRemapEditBtn.classList.remove("hidden");
   clearRemapFormError();
 
-  renderRemapList();
+  setEditingEntry(remapListEl, index);
 }
 
 function cancelRemapEdit() {
+  const cancelledIndex = editingRemapIndex;
   editingRemapIndex = null;
   clearRemapSelection();
   remapCommentInput.value = "";
@@ -1334,7 +1373,7 @@ function cancelRemapEdit() {
   cancelRemapEditBtn.classList.add("hidden");
   clearRemapFormError();
 
-  renderRemapList();
+  clearEditingEntry(remapListEl, cancelledIndex);
 }
 
 function clearRemapFormError() {
@@ -1374,16 +1413,19 @@ function handleAddOrSaveRemap() {
 
   const newEntry = { fromPrefix, toPrefix, comment };
 
+  let addedIndex = null;
   if (editingRemapIndex !== null) {
     remaps[editingRemapIndex] = newEntry;
     cancelRemapEdit();
   } else {
     remaps.push(newEntry);
+    addedIndex = remaps.length - 1;
     clearRemapSelection();
     remapCommentInput.value = "";
   }
 
   renderAll();
+  if (addedIndex !== null) animateEntryAddition(remapListEl, addedIndex, addedIndex === 0);
 }
 
 // --- Hotstrings mode: edit logic ---
@@ -1405,10 +1447,11 @@ function startHotstringEdit(index) {
   cancelHotstringEditBtn.classList.remove("hidden");
   clearHotstringFormError();
 
-  renderHotstringList();
+  setEditingEntry(hotstringListEl, index);
 }
 
 function cancelHotstringEdit() {
+  const cancelledIndex = editingHotstringIndex;
   editingHotstringIndex = null;
   hotstringTriggerInput.value = "";
   hotstringReplacementInput.value = "";
@@ -1423,7 +1466,209 @@ function cancelHotstringEdit() {
   cancelHotstringEditBtn.classList.add("hidden");
   clearHotstringFormError();
 
-  renderHotstringList();
+  clearEditingEntry(hotstringListEl, cancelledIndex);
+}
+
+function setupEditableEntries(listEl, handleEdit) {
+  listEl.querySelectorAll(".hotkey-item-expandable").forEach((item) => {
+    const description = item.querySelector(".hotkey-desc");
+
+    if (description && item.classList.contains("editing")) {
+      expandEntry(item, false);
+    }
+
+    item.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      handleEdit(parseInt(item.dataset.index, 10));
+    });
+
+    item.addEventListener("keydown", (event) => {
+      if (event.target !== item || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      handleEdit(parseInt(item.dataset.index, 10));
+    });
+
+    item.addEventListener("mouseenter", () => {
+      if (description) expandEntry(item);
+    });
+    item.addEventListener("mouseleave", () => {
+      if (description && !item.classList.contains("editing")) collapseEntry(item);
+    });
+  });
+}
+
+function setEditingEntry(listEl, index) {
+  listEl.querySelectorAll(".hotkey-item-expandable").forEach((item) => {
+    const isEdited = parseInt(item.dataset.index, 10) === index;
+    item.classList.toggle("editing", isEdited);
+
+    if (isEdited && !item.classList.contains("expanded")) {
+      expandEntry(item);
+    } else if (!isEdited && item.classList.contains("expanded") && !item.matches(":hover")) {
+      collapseEntry(item);
+    }
+  });
+}
+
+function clearEditingEntry(listEl, index) {
+  if (index === null) return;
+  const item = listEl.querySelector(`[data-index="${index}"]`);
+  if (!item) return;
+
+  item.classList.remove("editing");
+  collapseEntry(item);
+}
+
+function animateEntryAddition(listEl, index, replacedEmptyState = false) {
+  const item = listEl.querySelector(`[data-index="${index}"]`);
+  if (!item || !item.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  listEl.classList.add("animating-entry");
+  const height = item.getBoundingClientRect().height;
+  const startFrame = replacedEmptyState
+    ? {
+        height: `${height}px`,
+        marginBottom: "8px",
+        paddingTop: "10px",
+        paddingBottom: "10px",
+        opacity: 0,
+        transform: "translateY(6px)",
+      }
+    : {
+        height: "0px",
+        marginBottom: "0px",
+        paddingTop: "0px",
+        paddingBottom: "0px",
+        opacity: 0,
+        transform: "translateY(-8px)",
+      };
+  const animation = item.animate(
+    [
+      startFrame,
+      {
+        height: `${height}px`,
+        marginBottom: "8px",
+        paddingTop: "10px",
+        paddingBottom: "10px",
+        opacity: 1,
+        transform: "translateY(0)",
+      },
+    ],
+    {
+      duration: 320,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    }
+  );
+
+  animation.finished
+    .catch(() => {})
+    .finally(() => listEl.classList.remove("animating-entry"));
+}
+
+function animateEntryRemoval(item, removeEntry, revealsEmptyState = false) {
+  if (!item) {
+    removeEntry();
+    return;
+  }
+
+  if (!item.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    removeEntry();
+    return;
+  }
+
+  item.style.pointerEvents = "none";
+  item.style.overflow = "hidden";
+  const height = item.getBoundingClientRect().height;
+  const endFrame = revealsEmptyState
+    ? {
+        height: `${height}px`,
+        marginBottom: "8px",
+        paddingTop: "10px",
+        paddingBottom: "10px",
+        opacity: 0,
+        transform: "translateY(-6px)",
+      }
+    : {
+        height: "0px",
+        marginBottom: "0px",
+        paddingTop: "0px",
+        paddingBottom: "0px",
+        opacity: 0,
+        transform: "translateY(-6px)",
+      };
+  const animation = item.animate(
+    [
+      {
+        height: `${height}px`,
+        marginBottom: "8px",
+        paddingTop: "10px",
+        paddingBottom: "10px",
+        opacity: 1,
+        transform: "translateY(0)",
+      },
+      endFrame,
+    ],
+    {
+      duration: 280,
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+      fill: "forwards",
+    }
+  );
+
+  animation.finished.then(removeEntry).catch(removeEntry);
+}
+
+function animateEmptyState(listEl) {
+  const emptyState = listEl.querySelector(".empty-state");
+  if (!emptyState || !emptyState.animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  emptyState.animate(
+    [
+      { opacity: 0, transform: "translateY(5px)" },
+      { opacity: 1, transform: "translateY(0)" },
+    ],
+    {
+      duration: 220,
+      easing: "ease-out",
+    }
+  );
+}
+
+function expandEntry(item, animate = true) {
+  const description = item.querySelector(".hotkey-desc");
+  if (!description) return;
+
+  item.classList.remove("collapsing");
+  description.classList.add("measuring");
+  const expandedHeight = description.scrollHeight;
+  description.classList.remove("measuring");
+  description.style.maxHeight = animate ? `${description.offsetHeight}px` : `${expandedHeight}px`;
+  item.classList.add("expanded");
+
+  if (animate) {
+    requestAnimationFrame(() => {
+      description.style.maxHeight = `${expandedHeight}px`;
+    });
+  }
+}
+
+function collapseEntry(item) {
+  const description = item.querySelector(".hotkey-desc");
+  if (!description) return;
+
+  description.style.maxHeight = `${description.scrollHeight}px`;
+  item.classList.remove("expanded");
+  item.classList.add("collapsing");
+
+  description.addEventListener("transitionend", (event) => {
+    if (event.propertyName !== "max-height" || item.classList.contains("expanded")) return;
+    item.classList.remove("collapsing");
+    description.style.maxHeight = "26px";
+  }, { once: true });
+
+  requestAnimationFrame(() => {
+    description.style.maxHeight = "26px";
+  });
 }
 
 function clearHotstringFormError() {
@@ -1475,11 +1720,13 @@ function handleAddOrSaveHotstring() {
 
   const newEntry = { trigger, replacement, autoReplace, caseSensitive, insideWord, rawText, comment };
 
+  let addedIndex = null;
   if (editingHotstringIndex !== null) {
     hotstrings[editingHotstringIndex] = newEntry;
     cancelHotstringEdit();
   } else {
     hotstrings.push(newEntry);
+    addedIndex = hotstrings.length - 1;
     hotstringTriggerInput.value = "";
     hotstringReplacementInput.value = "";
     hotstringOptAuto.checked = false;
@@ -1490,6 +1737,7 @@ function handleAddOrSaveHotstring() {
   }
 
   renderAll();
+  if (addedIndex !== null) animateEntryAddition(hotstringListEl, addedIndex, addedIndex === 0);
 }
 
 // --- Mode switching ---
@@ -1507,6 +1755,8 @@ function switchMode(mode) {
   listSectionHotstrings.classList.toggle("hidden", mode !== "hotstrings");
   modeSectionRemap.classList.toggle("hidden", mode !== "remap");
   listSectionRemap.classList.toggle("hidden", mode !== "remap");
+  modeSectionSettings.classList.toggle("hidden", mode !== "settings");
+  scriptPreviewSection.classList.toggle("hidden", mode === "settings");
 
   // Leaving a tab resets its form/keyboard selection (and cancels any in-progress edit there),
   // so coming back later always starts from a clean slate instead of stale state.
@@ -1674,6 +1924,29 @@ function handleLanguageChange() {
   renderAll();
 }
 
+async function handleResetConfig() {
+  if (!window.confirm(t("settings.resetConfirmation"))) return;
+
+  resetConfigBtn.disabled = true;
+  settingsStatusEl.textContent = t("status.resettingConfig");
+  settingsStatusEl.className = "status-msg";
+
+  try {
+    Object.values(LEGACY_STORAGE_KEYS).forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (err) {
+        console.warn(`Could not remove legacy preference ${key}:`, err);
+      }
+    });
+    await invoke("reset_user_config");
+  } catch (err) {
+    resetConfigBtn.disabled = false;
+    settingsStatusEl.textContent = t("status.resetConfigError", { error: err });
+    settingsStatusEl.className = "status-msg status-error";
+  }
+}
+
 // --- Version display ---
 // Pulls AHKGEN_VERSION (declared at the very top of this file) into the
 // .version-tag span in the header, so the HTML never has to hardcode it.
@@ -1739,6 +2012,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   modeSectionHotkeys = document.querySelector("#mode-section-hotkeys");
   modeSectionHotstrings = document.querySelector("#mode-section-hotstrings");
   modeSectionRemap = document.querySelector("#mode-section-remap");
+  modeSectionSettings = document.querySelector("#mode-section-settings");
   listSectionHotkeys = document.querySelector("#list-section-hotkeys");
   listSectionHotstrings = document.querySelector("#list-section-hotstrings");
   listSectionRemap = document.querySelector("#list-section-remap");
@@ -1792,11 +2066,14 @@ window.addEventListener("DOMContentLoaded", async () => {
   remapCountEl = document.querySelector("#remap-count");
 
   scriptPreviewEl = document.querySelector("#script-preview");
+  scriptPreviewSection = document.querySelector("#script-preview-section");
 
   copyBtn = document.querySelector("#copy-btn");
   saveBtn = document.querySelector("#save-btn");
   openFileBtn = document.querySelector("#open-file-btn");
   actionStatusEl = document.querySelector("#action-status");
+  resetConfigBtn = document.querySelector("#reset-config-btn");
+  settingsStatusEl = document.querySelector("#settings-status");
 
   // Hotkeys mode keyboard
   keyboardEl.querySelectorAll(".kb-key").forEach((btn) => {
@@ -1854,6 +2131,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Language selector
   languageSelect.addEventListener("change", handleLanguageChange);
+  resetConfigBtn.addEventListener("click", handleResetConfig);
 
   // Theme toggle
   themeToggleCheckbox.addEventListener("change", handleThemeToggle);

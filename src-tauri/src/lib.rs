@@ -57,6 +57,18 @@ fn save_user_config(app: AppHandle, config: UserConfig) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn reset_user_config(app: AppHandle) -> Result<(), String> {
+    let path = user_config_path(&app)?;
+
+    if path.exists() {
+        fs::remove_file(&path)
+            .map_err(|err| format!("Could not delete config file {}: {err}", path.display()))?;
+    }
+
+    app.restart();
+}
+
+#[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
@@ -71,7 +83,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             load_user_config,
-            save_user_config
+            save_user_config,
+            reset_user_config
         ])
         .setup(|app| {
             use tauri::Manager;

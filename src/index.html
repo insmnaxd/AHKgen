@@ -50,15 +50,6 @@
             </span>
           </label>
         </div>
-        <div class="header-settings-row">
-          <label class="header-select-group">
-            <span data-i18n="settings.language">Language</span>
-            <select id="language-select">
-              <option value="en" data-i18n="language.en">English</option>
-              <option value="pl" data-i18n="language.pl">Polski</option>
-            </select>
-          </label>
-        </div>
       </header>
 
       <main class="layout">
@@ -67,7 +58,38 @@
           <button type="button" class="mode-tab active" data-mode="hotkeys"><span data-i18n="tab.hotkeys">Hotkeys</span> <span class="tab-badge" id="tab-badge-hotkeys"></span></button>
           <button type="button" class="mode-tab" data-mode="hotstrings"><span data-i18n="tab.hotstrings">Hotstrings</span> <span class="tab-badge" id="tab-badge-hotstrings"></span></button>
           <button type="button" class="mode-tab" data-mode="remap"><span data-i18n="tab.remap">Remapping</span> <span class="tab-badge" id="tab-badge-remap"></span></button>
+          <button type="button" class="mode-tab mode-tab-settings" data-mode="settings" data-i18n="tab.settings">Settings</button>
         </div>
+
+        <!-- SETTINGS -->
+        <section class="panel panel-wide mode-section hidden" id="mode-section-settings">
+          <h2 data-i18n="settings.title">Settings</h2>
+          <div class="settings-list">
+            <div class="settings-item">
+              <div>
+                <label for="language-select" class="settings-item-title" data-i18n="settings.language">Language</label>
+                <p class="settings-item-description" data-i18n="settings.languageDescription">Choose the application language.</p>
+              </div>
+              <select id="language-select" class="settings-select">
+                <option value="en" data-i18n="language.en">English</option>
+                <option value="pl" data-i18n="language.pl">Polski</option>
+                <option value="es" data-i18n="language.es">Español</option>
+                <option value="de" data-i18n="language.de">Deutsch</option>
+                <option value="fr" data-i18n="language.fr">Français</option>
+                <option value="it" data-i18n="language.it">Italiano</option>
+                <option value="pt" data-i18n="language.pt">Português</option>
+              </select>
+            </div>
+            <div class="settings-item settings-item-danger">
+              <div>
+                <span class="settings-item-title" data-i18n="settings.resetTitle">Reset configuration</span>
+                <p class="settings-item-description" data-i18n="settings.resetDescription">Delete the configuration file and restart the application.</p>
+              </div>
+              <button type="button" id="reset-config-btn" class="btn btn-danger" data-i18n="button.resetConfig">Reset configuration</button>
+            </div>
+          </div>
+          <p id="settings-status" class="status-msg"></p>
+        </section>
 
         <!-- NEW HOTKEY FORM (Hotkeys mode) -->
         <section class="panel panel-wide mode-section" id="mode-section-hotkeys">
@@ -470,7 +492,7 @@
         </section>
 
         <!-- SCRIPT PREVIEW -->
-        <section class="panel">
+        <section class="panel" id="script-preview-section">
           <h2 data-i18n="preview.title">Script preview (.ahk)</h2>
           <textarea id="script-preview" readonly spellcheck="false"></textarea>
           <div class="button-row">

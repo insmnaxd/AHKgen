@@ -171,6 +171,7 @@ textarea,
   flex: 1 1 auto;
   min-height: 0; /* required for a flex child to actually shrink and become scrollable */
   overflow-y: auto;
+  scrollbar-gutter: stable;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
@@ -391,25 +392,73 @@ textarea,
 
 .checkbox-row {
   display: flex;
-  gap: 16px;
+  gap: 10px 14px;
   flex-wrap: wrap;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.88rem;
+  gap: 5px;
+  font-size: 0.82rem;
+  line-height: 1.35;
   font-weight: 400;
-  color: var(--text-main);
+  color: var(--text-muted);
   cursor: pointer;
 }
 
+.field-group label.checkbox {
+  display: flex;
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.checkbox-row .checkbox {
+  white-space: nowrap;
+}
+
 .checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
   width: 16px;
   height: 16px;
-  accent-color: var(--accent);
+  flex: 0 0 16px;
+  margin: 0;
+  border: 1px solid var(--key-hover-border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
   cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.checkbox input[type="checkbox"]::before {
+  content: "";
+  width: 8px;
+  height: 5px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: rotate(-45deg) scale(0);
+  transform-origin: center;
+  transition: transform 0.1s ease-in-out;
+}
+
+.checkbox input[type="checkbox"]:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox input[type="checkbox"]:checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+
+.checkbox input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* --- Buttons --- */
@@ -449,6 +498,24 @@ textarea,
   color: var(--accent);
 }
 
+.btn-danger {
+  background-color: transparent;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--panel-border));
+}
+
+.btn-danger:hover {
+  background-color: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+}
+
 .button-row {
   display: flex;
   gap: 10px;
@@ -484,10 +551,16 @@ textarea,
   list-style: none;
   margin: 0;
   padding: 0;
+  min-height: 56px;
   max-height: 360px;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--panel-bg);
+}
+
+.hotkey-list.animating-entry {
+  overflow-y: hidden;
 }
 
 .hotkey-list::-webkit-scrollbar {
@@ -524,6 +597,12 @@ textarea,
   border-radius: 6px;
   margin-bottom: 8px;
   background-color: var(--input-bg);
+  transition: background-color 0.18s, border-color 0.18s;
+}
+
+.hotkey-item:hover {
+  background-color: var(--key-hover-bg);
+  border-color: var(--key-hover-border);
 }
 
 .hotkey-item-main {
@@ -531,24 +610,100 @@ textarea,
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  flex: 1;
   min-width: 0;
 }
 
 .hotkey-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
   background-color: var(--key-bg);
   color: var(--accent);
   font-family: "Consolas", "Courier New", monospace;
   font-size: 0.82rem;
   font-weight: 700;
-  padding: 3px 8px;
+  line-height: 1;
+  padding: 0 8px;
   border-radius: 4px;
   flex-shrink: 0;
 }
 
 .hotkey-desc {
+  min-width: 0;
   font-size: 0.85rem;
   color: var(--text-main);
   word-break: break-word;
+}
+
+.hotkey-item-expandable .hotkey-desc {
+  flex: 1 1 180px;
+  display: block;
+  min-width: 0;
+  line-height: 1.35;
+  max-height: 26px;
+  padding: 3px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: max-height 0.55s ease;
+}
+
+.hotkey-item-expandable {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.hotkey-item-expandable .hotkey-item-main {
+  display: flex;
+  align-items: start;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.hotkey-item-expandable .remap-arrow-inline {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+}
+
+.entry-prefix {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.hotkey-item-expandable .hotkey-desc {
+  align-self: start;
+}
+
+.hotkey-item-expandable .hotkey-item-actions {
+  align-self: start;
+}
+
+.hotkey-item-expandable .hotkey-comment {
+  flex: 0 1 auto;
+  max-width: 30%;
+}
+
+.hotkey-item-expandable {
+  cursor: pointer;
+}
+
+.hotkey-item-expandable.expanded .hotkey-desc,
+.hotkey-item-expandable.collapsing .hotkey-desc,
+.hotkey-item-expandable .hotkey-desc.measuring {
+  white-space: normal;
+  text-overflow: clip;
+}
+
+.hotkey-item-expandable:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
 }
 
 .hotkey-comment {
@@ -560,13 +715,18 @@ textarea,
 .btn-remove,
 .btn-remove-remap,
 .btn-remove-hotstring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   background: none;
   border: none;
   color: var(--text-muted);
   font-size: 1.2rem;
   line-height: 1;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0;
   flex-shrink: 0;
   transition: color 0.15s;
 }
@@ -618,6 +778,21 @@ textarea,
 @media (max-width: 800px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .settings-list {
+    width: 100%;
+  }
+
+  .settings-item {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .settings-select,
+  .settings-item .btn {
+    width: 100%;
   }
 }
 
@@ -718,29 +893,9 @@ textarea,
 .hotkey-item-actions {
   display: flex;
   align-items: center;
+  align-self: flex-start;
   gap: 4px;
   flex-shrink: 0;
-}
-
-.btn-edit,
-.btn-edit-remap,
-.btn-edit-hotstring {
-  background: none;
-  border: 1px solid var(--panel-border);
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 4px;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.btn-edit:hover,
-.btn-edit-remap:hover,
-.btn-edit-hotstring:hover {
-  color: var(--accent);
-  border-color: var(--accent);
 }
 
 /* --- Mode tabs --- */
@@ -776,6 +931,79 @@ textarea,
   color: var(--text-heading);
   background-color: var(--panel-bg);
   border-color: var(--panel-border);
+}
+
+.mode-tab-settings {
+  margin-left: auto;
+}
+
+/* --- Settings --- */
+
+.settings-list {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  min-width: 0;
+}
+
+.settings-item > div {
+  min-width: 0;
+}
+
+.settings-item-danger {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--panel-border));
+}
+
+.settings-item-title {
+  display: block;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.settings-item-description {
+  max-width: 360px;
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.settings-select {
+  width: 100px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+  background-color: var(--panel-bg);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.settings-item .btn {
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.settings-select:focus {
+  border-color: var(--accent);
 }
 
 /* --- Remap target picker --- */
@@ -835,14 +1063,6 @@ textarea,
   font-size: 0.9rem;
 }
 
-.header-settings-row {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
 .keyboard-settings {
   display: flex;
   align-items: center;
@@ -858,7 +1078,6 @@ textarea,
   color: var(--text-muted);
 }
 
-.header-select-group,
 .keyboard-layout-group {
   display: flex;
   align-items: center;
@@ -867,7 +1086,6 @@ textarea,
   color: var(--text-muted);
 }
 
-.header-select-group select,
 .keyboard-layout-group select {
   padding: 5px 10px;
   border-radius: 6px;
@@ -880,7 +1098,6 @@ textarea,
   cursor: pointer;
 }
 
-.header-select-group select:focus,
 .keyboard-layout-group select:focus {
   border-color: var(--accent);
 }

@@ -9,25 +9,44 @@ All notable changes in this project will be documented in this file.
 - Reset configuration button.
 - Catching key inputs.
 
-## Later
+### Later
 
-- More languages (ES :es:, DE :de:, FR :fr:, PT :portugal:, CN :cn:, JP :jp:).
+- More languages (CN :cn:, JP :jp:).
 - Expanded keyboard GUI.
 - Mouse input.
 
-## Ideas
+### Ideas
 
 - Save as .ahk and launch.
 - Add .ahk to shell:startup.
+
+## [1.0.0-alpha.1] - 2026-06-24
+
+### Added
+- `Settings` tab.
+- `Reset configuration` button.
+- Animations on the item lists.
+- Spanish :es: translation.
+- German :de: translation.
+- French :fr: translation.
+- Italian :it: translation.
+- Portuguese :portugal: translation.
+
+### Changed
+
+- Moved language selection to the `Settings` tab.
+- Adjusted how lists display their items.
+- Items can now be modified by directly clicking on them.
+- Items expand on hover and on edit if their description exceeds a single line of text.
 
 ## [1.0.0-alpha.0] - 2026-06-23
 
 ### Added
 
-- Multi-language support:
-    - Default language inherits from the browser language.
-    - English :uk: is set as the fallback language if browser language is not supported.
-    - Added Polish :poland: translation.
+- Language selection.
+- Default language inherits browser's language.
+- English :uk: is set as the fallback language if browser's language is not supported.
+- Polish :poland: translation.
 - Configuration file:
     - Saves the theme.
     - Saves the keyboard layout.
@@ -51,6 +70,7 @@ All notable changes in this project will be documented in this file.
 
 ### Changed
 
+- Initial window height and width is now controlled by `lib.rs` rather than `tauri.conf.json`.
 - Further improved version control.
 
 ## [0.9.2] - 2026-06-22
@@ -108,6 +128,7 @@ AHKgen is now on GitHub.
 - App icon.
 - Key remapping.
 - Raw text option in `Hotstrings`.
+- Set initial window height to 75% and width to 40%.
 
 ### Changed
 
