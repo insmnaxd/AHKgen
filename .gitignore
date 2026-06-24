@@ -10,6 +10,7 @@ dist/
 dist-ssr/
 build/
 scripts/
+test/
 
 # Environment variables
 .env
