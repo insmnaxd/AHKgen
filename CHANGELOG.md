@@ -4,7 +4,7 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
-## [1.0.0-alpha.4] - 2026-06-25
+## [1.0.0-alpha.4] - 2026-06-24
 
 ### Changed
 
