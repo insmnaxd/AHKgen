@@ -34,3 +34,30 @@ Download the latest release from the [GitHub Releases](https://github.com/insmna
 - **Frontend**: HTML, CSS, JavaScript (Tauri)
 - **Backend**: Rust
 - **Renderer**: WebView2 (Windows)
+
+---
+
+## Testing
+
+Run the fast unit and round-trip tests:
+
+```powershell
+npm test
+```
+
+Run integration tests against an installed AutoHotkey v1 interpreter:
+
+```powershell
+npm run test:ahk
+```
+
+The integration suite detects standard v1 installations under
+`%LOCALAPPDATA%\Programs\AutoHotkey`. For a custom installation, provide the
+executable explicitly:
+
+```powershell
+$env:AHK_V1_PATH = "C:\path\to\AutoHotkeyU64.exe"
+npm run test:ahk
+```
+
+If AutoHotkey v1 is unavailable, the integration tests are skipped.

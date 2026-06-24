@@ -4,13 +4,19 @@ import test from "node:test";
 import {
   escapeForRun,
   escapeForSend,
+  escapeForExpressionString,
   escapeHotstringTrigger,
+  unescapeFromExpressionString,
   unescapeFromRun,
   unescapeFromSend,
   unescapeHotstringTrigger,
 } from "../src/ahk/escaping.js";
-import { buildFullScript } from "../src/ahk/generator.js";
-import { parseAhkScript, parseHotstringDefinition } from "../src/ahk/parser.js";
+import { buildFullScript, buildHotstringLine } from "../src/ahk/generator.js";
+import {
+  parseAhkScript,
+  parseHotstringDefinition,
+  parseHotstringFunction,
+} from "../src/ahk/parser.js";
 
 test("Send escaping preserves special characters in a round-trip", () => {
   const cases = [
@@ -52,6 +58,18 @@ test("Run escaping protects commas from AHK parameter parsing", () => {
   assert.equal(unescapeFromRun(`"${escaped}"`), input);
 });
 
+test("Run escaping protects percent signs from AHK variable expansion", () => {
+  const input =
+    "https://example.com/search?progress=100%25&literal=`%&items=one,two";
+  const escaped = escapeForRun(input);
+
+  assert.equal(
+    escaped,
+    "https://example.com/search?progress=100`%25&literal=```%&items=one`,two"
+  );
+  assert.equal(unescapeFromRun(`"${escaped}"`), input);
+});
+
 test("hotstring trigger escaping supports colons and backticks", () => {
   const cases = ["a:b", ":abc", "abc:", ":", "a::b", "::", "a`b", "`:"];
 
@@ -65,6 +83,34 @@ test("hotstring parser ignores escaped delimiter colons", () => {
     options: "C",
     trigger: "a::b",
     replacement: "12:30",
+  });
+});
+
+test("AHK expression strings preserve replacement text", () => {
+  const input = 'Quote: "hello", backtick: `, tab:\t\nnext line';
+  assert.equal(
+    unescapeFromExpressionString(escapeForExpressionString(input)),
+    input
+  );
+});
+
+test("hotstrings use the unambiguous Hotstring function syntax", () => {
+  const hotstring = {
+    trigger: ":clock:",
+    replacement: 'Time: "12:30"` now\n',
+    autoReplace: true,
+    caseSensitive: true,
+    insideWord: false,
+    rawText: false,
+    comment: "Clock",
+  };
+  const line = buildHotstringLine(hotstring);
+
+  assert.match(line, /^; Clock\nHotstring\(/);
+  assert.deepEqual(parseHotstringFunction(line.split("\n")[1]), {
+    options: "*C",
+    trigger: hotstring.trigger,
+    replacement: hotstring.replacement,
   });
 });
 
@@ -341,7 +387,10 @@ test("hotstring replacements preserve leading and trailing whitespace", () => {
     parsed.hotstrings[0].replacement,
     input.hotstrings[0].replacement
   );
-  assert.match(buildFullScript(input), /padded replacement  `$/m);
+  assert.match(
+    buildFullScript(input),
+    /Hotstring\(":\*:pad", "  padded replacement  "\)/
+  );
 });
 
 test("parser rejects scripts without the AHKgen signature", () => {

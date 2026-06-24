@@ -1,5 +1,9 @@
 import { AHKGEN_SIGNATURE_PREFIX } from "./constants.js";
-import { escapeForRun, escapeForSend, escapeHotstringTrigger } from "./escaping.js";
+import {
+  escapeForExpressionString,
+  escapeForRun,
+  escapeForSend,
+} from "./escaping.js";
 
 export function buildActionLine(type, value) {
   switch (type) {
@@ -52,11 +56,12 @@ export function buildHotstringLine(hotstring) {
   if (hotstring.insideWord) options += "?";
   if (hotstring.rawText) options += "R";
 
-  const optionsPart = options ? `:${options}:` : "::";
-  const replacement = /[ \t]$/.test(hotstring.replacement)
-    ? `${hotstring.replacement}\``
-    : hotstring.replacement;
-  lines.push(`${optionsPart}${escapeHotstringTrigger(hotstring.trigger)}::${replacement}`);
+  const name = options ? `:${options}:${hotstring.trigger}` : `::${hotstring.trigger}`;
+  lines.push(
+    `Hotstring("${escapeForExpressionString(name)}", "${escapeForExpressionString(
+      hotstring.replacement
+    )}")`
+  );
   return lines.join("\n");
 }
 
@@ -76,13 +81,13 @@ export function buildFullScript({ version, hotkeys = [], remaps = [], hotstrings
   }
 
   const blocks = [];
-  if (hotkeys.length > 0) {
-    blocks.push("; --- Hotkeys ---");
-    blocks.push(hotkeys.map(buildHotkeyBlock).join("\n\n"));
-  }
   if (hotstrings.length > 0) {
     blocks.push("; --- Hotstrings ---");
     blocks.push(hotstrings.map(buildHotstringLine).join("\n\n"));
+  }
+  if (hotkeys.length > 0) {
+    blocks.push("; --- Hotkeys ---");
+    blocks.push(hotkeys.map(buildHotkeyBlock).join("\n\n"));
   }
   if (remaps.length > 0) {
     blocks.push("; --- Key remaps ---");

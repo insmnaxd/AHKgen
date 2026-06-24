@@ -33,11 +33,12 @@ export function unescapeFromSend(text) {
     .replace(/``/g, "`");
 }
 
-// AHK v1 uses doubled quotes inside a quoted Run target. Commas must be
-// escaped because Run is a command whose parameters are comma-separated.
+// AHK v1 uses doubled quotes inside a quoted Run target. Percent signs start
+// legacy variable references, while commas separate command parameters.
 export function escapeForRun(text) {
   return text
     .replace(/`/g, "``")
+    .replace(/%/g, "`%")
     .replace(/,/g, "`,")
     .replace(/"/g, '""');
 }
@@ -49,12 +50,51 @@ export function unescapeFromRun(text) {
   }
   return result
     .replace(/""/g, '"')
+    .replace(/`%/g, "%")
     .replace(/`,/g, ",")
     .replace(/``/g, "`");
 }
 
-// A backtick makes the following character literal in AHK v1. Escaping every
-// colon supports colons at the beginning/end and consecutive "::" in a trigger.
+export function escapeForExpressionString(text) {
+  return text
+    .replace(/`/g, "``")
+    .replace(/"/g, '""')
+    .replace(/\r\n|\r|\n/g, "`n")
+    .replace(/\t/g, "`t");
+}
+
+export function unescapeFromExpressionString(text) {
+  const escapeSequences = {
+    a: "\u0007",
+    b: "\b",
+    f: "\f",
+    n: "\n",
+    r: "\r",
+    t: "\t",
+    v: "\v",
+  };
+  let result = "";
+
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    const next = text[index + 1];
+
+    if (character === '"' && next === '"') {
+      result += '"';
+      index++;
+    } else if (character === "`" && next !== undefined) {
+      result += escapeSequences[next] ?? next;
+      index++;
+    } else {
+      result += character;
+    }
+  }
+
+  return result;
+}
+
+// Kept for parsing legacy static definitions generated before Hotstring()
+// became the output format. New definitions use expression-string escaping.
 export function escapeHotstringTrigger(text) {
   return text.replace(/`/g, "``").replace(/:/g, "`:");
 }

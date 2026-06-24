@@ -4,11 +4,6 @@ Planned features and ideas for future releases.
 
 See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 
-## [1.0.0-alpha.5]
-
-- Phase four of refactoring; separate UI and bootstrap from `main.js`.
-- Testing of generated .ahk scripts against real interpreter.
-
 ## [1.0.0-alpha.6]
 
 - Catching input from keyboard in `Hotkeys` and `Hotstrings`.

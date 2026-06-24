@@ -1,5 +1,34 @@
 import { AHKGEN_SIGNATURE_PREFIX } from "./constants.js";
-import { unescapeFromRun, unescapeFromSend, unescapeHotstringTrigger } from "./escaping.js";
+import {
+  unescapeFromExpressionString,
+  unescapeFromRun,
+  unescapeFromSend,
+  unescapeHotstringTrigger,
+} from "./escaping.js";
+
+export function parseHotstringFunction(line) {
+  const match = line.match(
+    /^Hotstring\("((?:""|[^"])*)", "((?:""|[^"])*)"\)$/
+  );
+  if (!match) return null;
+
+  const name = unescapeFromExpressionString(match[1]);
+  const replacement = unescapeFromExpressionString(match[2]);
+  let options = "";
+  let trigger = "";
+
+  if (name.startsWith("::")) {
+    trigger = name.slice(2);
+  } else {
+    const optionsEnd = name.indexOf(":", 1);
+    if (!name.startsWith(":") || optionsEnd === -1) return null;
+    options = name.slice(1, optionsEnd);
+    trigger = name.slice(optionsEnd + 1);
+  }
+
+  if (!trigger) return null;
+  return { options, trigger, replacement };
+}
 
 export function parseHotstringDefinition(line) {
   if (!line.startsWith(":")) return null;
@@ -96,7 +125,9 @@ export function parseAhkScript(rawText) {
   while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trim();
-    const hotstringDefinition = parseHotstringDefinition(line.trimStart());
+    const hotstringDefinition =
+      parseHotstringFunction(trimmed) ||
+      parseHotstringDefinition(line.trimStart());
     const remapMatch = trimmed.match(/^(.+)::(.+)$/);
     const hotkeyMatch = trimmed.match(/^(.+)::$/);
 

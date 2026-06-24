@@ -1,6 +1,6 @@
 [package]
 name = "AHKgen"
-version = "1.0.0-alpha.4"
+version = "1.0.0-alpha.5"
 description = "Simple script generator for AutoHotkey v1"
 authors = ["Aleksander Łysoń"]
 edition = "2021"
