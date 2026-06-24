@@ -1,6 +1,17 @@
+import { buildFullScript } from "./ahk/generator.js";
+import { parseAhkScript } from "./ahk/parser.js";
+import { createUserConfigStore } from "./config/user-config.js";
+import { getKeyboardLayoutMap, isSupportedKeyboardLayout } from "./keyboard/layouts.js";
+import {
+  buildPrefix,
+  isModifierActive,
+  parsePrefix,
+  toggleModifierInSet,
+} from "./keyboard/prefixes.js";
+
 // --- App version ---
 
-const AHKGEN_VERSION = "v1.0.0-alpha.1";
+const AHKGEN_VERSION = "v1.0.0-alpha.2";
 
 const { writeTextFile, readTextFile } = window.__TAURI__.fs;
 const { save, open } = window.__TAURI__.dialog;
@@ -86,19 +97,7 @@ const TRANSLATION_FILES = {
   it: "./i18n/it.json",
   pt: "./i18n/pt.json",
 };
-const DEFAULT_USER_CONFIG = {
-  language: null,
-  theme: null,
-  keyboardLayout: null,
-};
-const LEGACY_STORAGE_KEYS = {
-  language: "ahkgen.language",
-  theme: "ahkgen.theme",
-  keyboardLayout: "ahkgen.keyboardLayout",
-};
-
 let currentLanguage = DEFAULT_LANGUAGE;
-let userConfig = { ...DEFAULT_USER_CONFIG };
 
 const I18N = {};
 
@@ -126,70 +125,12 @@ const ACTION_CONFIG = {
   },
 };
 
-function getLegacyPreference(key) {
-  try {
-    return localStorage.getItem(LEGACY_STORAGE_KEYS[key]);
-  } catch (err) {
-    return null;
-  }
-}
-
-function normalizeUserConfig(config) {
-  return {
-    language: resolveSupportedLanguage(config?.language) || null,
-    theme: config?.theme === "light" || config?.theme === "dark" ? config.theme : null,
-    keyboardLayout: Object.prototype.hasOwnProperty.call(LAYOUT_KEY_MAPS, config?.keyboardLayout)
-      ? config.keyboardLayout
-      : null,
-  };
-}
-
-async function loadUserConfig() {
-  try {
-    const loadedConfig = await invoke("load_user_config");
-    userConfig = normalizeUserConfig(loadedConfig);
-    migrateLegacyPreferences();
-  } catch (err) {
-    console.warn("Could not load user config:", err);
-    userConfig = { ...DEFAULT_USER_CONFIG };
-    migrateLegacyPreferences();
-  }
-}
-
-function migrateLegacyPreferences() {
-  const migratedConfig = { ...userConfig };
-
-  if (!migratedConfig.language) {
-    migratedConfig.language = resolveSupportedLanguage(getLegacyPreference("language"));
-  }
-  if (!migratedConfig.theme) {
-    const theme = getLegacyPreference("theme");
-    migratedConfig.theme = theme === "light" || theme === "dark" ? theme : null;
-  }
-  if (!migratedConfig.keyboardLayout) {
-    const keyboardLayout = getLegacyPreference("keyboardLayout");
-    migratedConfig.keyboardLayout = Object.prototype.hasOwnProperty.call(LAYOUT_KEY_MAPS, keyboardLayout)
-      ? keyboardLayout
-      : null;
-  }
-
-  const normalizedConfig = normalizeUserConfig(migratedConfig);
-  const changed = JSON.stringify(normalizedConfig) !== JSON.stringify(userConfig);
-  userConfig = normalizedConfig;
-
-  if (changed) saveUserConfig();
-}
-
-function updateUserConfig(patch) {
-  userConfig = normalizeUserConfig({ ...userConfig, ...patch });
-  saveUserConfig();
-}
-
-function saveUserConfig() {
-  invoke("save_user_config", { config: userConfig }).catch((err) => {
-    console.warn("Could not save user config:", err);
-  });
-}
+const userConfigStore = createUserConfigStore({
+  invoke,
+  storage: localStorage,
+  resolveLanguage: resolveSupportedLanguage,
+  isKeyboardLayout: isSupportedKeyboardLayout,
+});
 
 async function loadTranslations() {
   await Promise.all(
@@ -231,11 +172,11 @@ function detectSystemLanguage() {
 }
 
 function getSavedLanguagePreference() {
-  return resolveSupportedLanguage(userConfig.language);
+  return resolveSupportedLanguage(userConfigStore.get().language);
 }
 
 function saveLanguagePreference(language) {
-  updateUserConfig({ language });
+  userConfigStore.update({ language });
 }
 
 function setLanguage(language, persist = false) {
@@ -303,127 +244,6 @@ function updateTitlebarMaximizeLabel() {
 // Whether to distinguish left/right variants of Ctrl, Shift, Alt, Win (global setting)
 let distinguishSides = false;
 
-// Maps a *generic* modifier name to its AHK v1 symbol (used when distinguishSides is off)
-const MODIFIER_SYMBOLS = {
-  Ctrl: "^",
-  Alt: "!",
-  Shift: "+",
-  Win: "#",
-};
-
-// Maps a side-specific key name to its AHK v1 symbol (used when distinguishSides is on).
-// Ctrl/Shift/Win get left/right-aware symbols. Plain Alt intentionally stays "!" because
-// AltGr has its own distinct AHK v1 symbol, <^>!, and should not collapse into Alt.
-const SIDE_MODIFIER_SYMBOLS = {
-  LCtrl: "<^",
-  RCtrl: ">^",
-  LAlt: "!",
-  RAlt: "!",
-  LShift: "<+",
-  RShift: ">+",
-  LWin: "<#",
-  RWin: ">#",
-  AltGr: "<^>!",
-};
-
-// Every side-specific key name maps back to its generic family, used when distinguishSides is off
-// (e.g. LCtrl and RCtrl both collapse down to the generic "Ctrl" symbol). AltGr is deliberately
-// its own family so it never lights up or toggles the plain Alt key.
-const SIDE_KEY_TO_GENERIC = {
-  LCtrl: "Ctrl",
-  RCtrl: "Ctrl",
-  LAlt: "Alt",
-  RAlt: "Alt",
-  LShift: "Shift",
-  RShift: "Shift",
-  LWin: "Win",
-  RWin: "Win",
-  AltGr: "AltGr",
-};
-
-// All recognized modifier key names (side-specific identifiers used as data-key values on buttons)
-const ALL_MODIFIER_KEYS = ["LCtrl", "RCtrl", "LAlt", "RAlt", "LShift", "RShift", "LWin", "RWin", "AltGr"];
-
-// Reverse lookup: any AHK prefix symbol sequence -> key name (longest match first).
-// Generic AHK symbols map to the left-side representative so editing a saved generic
-// hotkey still lights up a concrete key in the visual keyboard.
-// Ordered so that multi-character symbols like "<^>!" and "<^" are tried before single-char ones.
-const PREFIX_SYMBOL_TABLE = [
-  ["<^>!", "AltGr"],
-  ["<^", "LCtrl"],
-  [">^", "RCtrl"],
-  ["<!", "LAlt"],
-  [">!", "RAlt"],
-  ["<+", "LShift"],
-  [">+", "RShift"],
-  ["<#", "LWin"],
-  [">#", "RWin"],
-  ["^", "LCtrl"],
-  ["!", "LAlt"],
-  ["+", "LShift"],
-  ["#", "LWin"],
-];
-
-// --- Shared helpers: building/parsing a "modifiers + key" prefix string ---
-// `mods` is always a Set of side-specific key names (e.g. "LCtrl", "RShift", "AltGr").
-// Whether the *output* symbol is side-specific or generic depends on distinguishSides.
-
-function buildPrefix(mods, key) {
-  let prefix = "";
-
-  if (distinguishSides) {
-    // Side-specific output, in a stable order: Ctrl, Alt, Shift, Win variants, then AltGr
-    const appendedSymbols = new Set();
-    for (const modKey of ["LCtrl", "RCtrl", "LAlt", "RAlt", "LShift", "RShift", "LWin", "RWin", "AltGr"]) {
-      const symbol = SIDE_MODIFIER_SYMBOLS[modKey];
-      if (mods.has(modKey) && !appendedSymbols.has(symbol)) {
-        prefix += symbol;
-        appendedSymbols.add(symbol);
-      }
-    }
-  } else {
-    // Generic output: collapse any side-specific key down to its family, de-duplicating.
-    // AltGr is the one exception - it always keeps its special <^>! symbol, never collapsing
-    // to a plain Alt, since it's a physically distinct key combination.
-    const generic = new Set();
-    mods.forEach((modKey) => {
-      if (modKey === "AltGr") return; // handled separately below
-      generic.add(SIDE_KEY_TO_GENERIC[modKey] || modKey);
-    });
-    if (generic.has("Ctrl")) prefix += MODIFIER_SYMBOLS.Ctrl;
-    if (generic.has("Alt")) prefix += MODIFIER_SYMBOLS.Alt;
-    if (generic.has("Shift")) prefix += MODIFIER_SYMBOLS.Shift;
-    if (generic.has("Win")) prefix += MODIFIER_SYMBOLS.Win;
-    if (mods.has("AltGr")) prefix += SIDE_MODIFIER_SYMBOLS.AltGr;
-  }
-
-  if (key) prefix += key;
-  return prefix;
-}
-
-// Parses a prefix string (e.g. "<^+j" or "^+j") back into modifiers + main key.
-// Recognizes both generic and side-specific symbols regardless of the current distinguishSides setting,
-// so existing entries display correctly even if the user toggles the setting afterwards.
-function parsePrefix(prefix) {
-  const mods = new Set();
-  let rest = prefix;
-
-  let matched = true;
-  while (matched) {
-    matched = false;
-    for (const [symbol, modKey] of PREFIX_SYMBOL_TABLE) {
-      if (rest.startsWith(symbol)) {
-        mods.add(modKey);
-        rest = rest.slice(symbol.length);
-        matched = true;
-        break;
-      }
-    }
-  }
-
-  return { mods, key: rest };
-}
-
 // Updates the visible label of every modifier button on both keyboards,
 // switching between e.g. "Ctrl" and "L Ctrl" / "R Ctrl" depending on distinguishSides.
 // --- Keyboard layout (QWERTY / QWERTZ / AZERTY) ---
@@ -432,18 +252,8 @@ function parsePrefix(prefix) {
 // in the chosen layout, both for the visible label and the underlying data-key used
 // to build AHK prefixes - so the hotkey generated matches the physical key the user
 // would actually press on that layout.
-let currentKeyboardLayout = "qwerty";
-
-// Each entry: QWERTY base key -> key in that layout. Only keys that actually move are listed.
-const LAYOUT_KEY_MAPS = {
-  qwerty: {},
-  qwertz: { z: "y", y: "z" },
-  azerty: { a: "q", q: "a", z: "w", w: "z" },
-};
-
 function applyKeyboardLayout(layout) {
-  currentKeyboardLayout = layout;
-  const map = LAYOUT_KEY_MAPS[layout] || {};
+  const map = getKeyboardLayoutMap(layout);
 
   [keyboardEl, keyboardRemapEl].forEach((kb) => {
     if (!kb) return;
@@ -462,13 +272,12 @@ function applyKeyboardLayout(layout) {
 }
 
 function saveKeyboardLayoutPreference(layout) {
-  updateUserConfig({ keyboardLayout: layout });
+  userConfigStore.update({ keyboardLayout: layout });
 }
 
 function loadKeyboardLayoutPreference() {
-  return Object.prototype.hasOwnProperty.call(LAYOUT_KEY_MAPS, userConfig.keyboardLayout)
-    ? userConfig.keyboardLayout
-    : "qwerty";
+  const { keyboardLayout } = userConfigStore.get();
+  return isSupportedKeyboardLayout(keyboardLayout) ? keyboardLayout : "qwerty";
 }
 
 // --- Light / dark theme ---
@@ -477,11 +286,11 @@ function loadKeyboardLayoutPreference() {
 // the OS setting from then on (no "auto" state to go back to, by design).
 
 function getSavedThemePreference() {
-  return userConfig.theme; // "light" | "dark" | null (never set)
+  return userConfigStore.get().theme; // "light" | "dark" | null (never set)
 }
 
 function saveThemePreference(theme) {
-  updateUserConfig({ theme });
+  userConfigStore.update({ theme });
 }
 
 function systemPrefersDark() {
@@ -564,35 +373,8 @@ function setDistinguishSides(value) {
 
 // --- Hotkeys mode: visual keyboard logic ---
 
-// Toggles a modifier within a given selection Set, correctly handling the "generic" mode:
-// when distinguishSides is off, toggling EITHER the L or R button of a family (e.g. LCtrl/RCtrl)
-// should affect the whole family together, since on the keyboard they represent one modifier.
-function toggleModifierInSet(mods, modKey, base) {
-  if (distinguishSides || base === "AltGr") {
-    if (mods.has(modKey)) {
-      mods.delete(modKey);
-    } else {
-      mods.add(modKey);
-    }
-    return;
-  }
-
-  // Generic mode: check if any L/R variant of this base is currently selected
-  const familyKeys = ALL_MODIFIER_KEYS.filter((k) => SIDE_KEY_TO_GENERIC[k] === base);
-  const isActive = familyKeys.some((k) => mods.has(k));
-
-  if (isActive) {
-    familyKeys.forEach((k) => mods.delete(k));
-  } else {
-    // Add a single representative (the one that was actually clicked) - buildPrefix
-    // collapses it to the generic symbol regardless of which specific key is stored.
-    mods.add(modKey);
-  }
-}
-
 function toggleModifier(modKey) {
-  const base = SIDE_KEY_TO_GENERIC[modKey] || modKey;
-  toggleModifierInSet(selectedModifiers, modKey, base);
+  toggleModifierInSet(selectedModifiers, modKey, distinguishSides);
   updateKeyboardVisuals();
   updateSelectedHotkeyDisplay();
 }
@@ -611,29 +393,16 @@ function clearHotkeySelection() {
   updateSelectedHotkeyDisplay();
 }
 
-// Decides whether a given modifier button should be shown as "active", given the current
-// selection set. When distinguishSides is off, both the L and R button of the same family
-// (e.g. LCtrl and RCtrl) light up together, since they represent one and the same modifier.
-// AltGr is always treated as its own distinct key in both modes.
-function isModifierActive(btn, mods) {
-  const key = btn.dataset.key; // e.g. "LCtrl", "RCtrl", "AltGr"
-  const base = btn.dataset.base; // e.g. "Ctrl", "Alt", "Shift", "Win", "AltGr"
-
-  if (distinguishSides || base === "AltGr") {
-    return mods.has(key);
-  }
-
-  // Generic mode: light up if ANY key sharing this base is selected
-  return [...mods].some((m) => (SIDE_KEY_TO_GENERIC[m] || m) === base);
-}
-
 function updateKeyboardVisuals() {
   const buttons = keyboardEl.querySelectorAll(".kb-key");
   buttons.forEach((btn) => {
     const key = btn.dataset.key;
     const isModifier = btn.classList.contains("kb-modifier");
     if (isModifier) {
-      btn.classList.toggle("active", isModifierActive(btn, selectedModifiers));
+      btn.classList.toggle(
+        "active",
+        isModifierActive(key, btn.dataset.base, selectedModifiers, distinguishSides)
+      );
     } else {
       btn.classList.toggle("active", selectedKey === key);
     }
@@ -641,7 +410,7 @@ function updateKeyboardVisuals() {
 }
 
 function buildHotkeyPrefix() {
-  return buildPrefix(selectedModifiers, selectedKey);
+  return buildPrefix(selectedModifiers, selectedKey, distinguishSides);
 }
 
 function updateSelectedHotkeyDisplay() {
@@ -661,8 +430,7 @@ function setRemapActiveTarget(target) {
 
 function toggleRemapModifier(modKey) {
   const mods = remapActiveTarget === "from" ? remapFromMods : remapToMods;
-  const base = SIDE_KEY_TO_GENERIC[modKey] || modKey;
-  toggleModifierInSet(mods, modKey, base);
+  toggleModifierInSet(mods, modKey, distinguishSides);
   updateRemapKeyboardVisuals();
   updateRemapDisplays();
 }
@@ -686,7 +454,10 @@ function updateRemapKeyboardVisuals() {
     const k = btn.dataset.key;
     const isModifier = btn.classList.contains("kb-modifier");
     if (isModifier) {
-      btn.classList.toggle("active", isModifierActive(btn, mods));
+      btn.classList.toggle(
+        "active",
+        isModifierActive(k, btn.dataset.base, mods, distinguishSides)
+      );
     } else {
       btn.classList.toggle("active", key === k);
     }
@@ -694,8 +465,8 @@ function updateRemapKeyboardVisuals() {
 }
 
 function updateRemapDisplays() {
-  const fromPrefix = buildPrefix(remapFromMods, remapFromKey);
-  const toPrefix = buildPrefix(remapToMods, remapToKey);
+  const fromPrefix = buildPrefix(remapFromMods, remapFromKey, distinguishSides);
+  const toPrefix = buildPrefix(remapToMods, remapToKey, distinguishSides);
   remapFromDisplay.textContent = fromPrefix || t("remap.pickKey");
   remapToDisplay.textContent = toPrefix || t("remap.pickKey");
 }
@@ -709,292 +480,7 @@ function clearRemapSelection() {
   updateRemapDisplays();
 }
 
-// --- Escaping helpers (Hotkeys mode actions) ---
-
-// Escape special characters for the Send command (AHK v1: { } ^ ! + # are special)
-function escapeForSend(text) {
-  return text
-    .replace(/\{/g, "{{}")
-    .replace(/\}/g, "{}}")
-    .replace(/\^/g, "{^}")
-    .replace(/!/g, "{!}")
-    .replace(/\+/g, "{+}")
-    .replace(/#/g, "{#}")
-    .replace(/\r\n|\r|\n/g, "+{Enter}"); // newlines become Shift+Enter, which inserts a line break instead of "submitting" in chat apps like Teams or Claude
-}
-
-// Escape quotes for Run (AHK v1 uses " as a delimiter)
-function escapeForRun(text) {
-  return text.replace(/"/g, '""');
-}
-
-function buildActionLine(type, value) {
-  switch (type) {
-    case "send":
-      return `    Send, ${escapeForSend(value)}`;
-    case "run":
-      return `    Run, "${escapeForRun(value)}"`;
-    case "url":
-      return `    Run, "${escapeForRun(value)}"`;
-    case "command":
-      return `    Run, ${value}`;
-    default:
-      return "";
-  }
-}
-
-function buildHotkeyBlock(hotkey) {
-  const lines = [];
-  if (hotkey.comment) {
-    lines.push(`; ${hotkey.comment}`);
-  }
-  lines.push(`${hotkey.prefix}::`);
-  // SendMode only matters for the "send" action type (Run/Url/Command don't use Send at all).
-  // It's set right before the Send line so it only affects this hotkey's execution.
-  if (hotkey.actionType === "send" && hotkey.sendMode && hotkey.sendMode !== "Input") {
-    lines.push(`    SendMode, ${hotkey.sendMode}`);
-  }
-  lines.push(buildActionLine(hotkey.actionType, hotkey.actionValue));
-  lines.push("return");
-  return lines.join("\n");
-}
-
-// A remap block is just "from::to" - no action line, no return.
-function buildRemapBlock(remap) {
-  const lines = [];
-  if (remap.comment) {
-    lines.push(`; ${remap.comment}`);
-  }
-  lines.push(`${remap.fromPrefix}::${remap.toPrefix}`);
-  return lines.join("\n");
-}
-
-// A hotstring line looks like ":options:trigger::replacement" - options are optional
-// and only present if at least one is enabled.
-function buildHotstringLine(hotstring) {
-  const lines = [];
-  if (hotstring.comment) {
-    lines.push(`; ${hotstring.comment}`);
-  }
-
-  let optionsStr = "";
-  if (hotstring.autoReplace) optionsStr += "*";
-  if (hotstring.caseSensitive) optionsStr += "C";
-  if (hotstring.insideWord) optionsStr += "?";
-  if (hotstring.rawText) optionsStr += "R";
-
-  const optionsPart = optionsStr ? `:${optionsStr}:` : "::";
-  lines.push(`${optionsPart}${hotstring.trigger}::${hotstring.replacement}`);
-  return lines.join("\n");
-}
-
-// Signature written into every generated script's header.
-// Used to verify a file was actually created by this app before attempting to parse it back.
-// Prefix used to verify a file was actually created by this app, regardless of which
-// app version generated it. The full header line includes the current version (e.g. "v0.5"),
-// but validation only checks that it STARTS WITH this prefix, so future versions stay compatible
-// with files generated by older (or newer) versions of the app.
-const AHKGEN_SIGNATURE_PREFIX = "; Made with AHKgen";
-const AHKGEN_SIGNATURE = `${AHKGEN_SIGNATURE_PREFIX} ${AHKGEN_VERSION}`;
-
-function buildFullScript() {
-  const header = [
-    AHKGEN_SIGNATURE,
-    "; AutoHotkey v1",
-    "#NoEnv",
-    "#SingleInstance, Force",
-    "SendMode, Input",
-    "SetWorkingDir, %A_ScriptDir%",
-    "",
-  ].join("\n");
-
-  if (hotkeys.length === 0 && remaps.length === 0 && hotstrings.length === 0) {
-    return header + "\n; No hotkeys, hotstrings, or remaps added yet.";
-  }
-
-  const blocks = [];
-  if (hotkeys.length > 0) {
-    blocks.push("; --- Hotkeys ---");
-    blocks.push(hotkeys.map(buildHotkeyBlock).join("\n\n"));
-  }
-  if (hotstrings.length > 0) {
-    blocks.push("; --- Hotstrings ---");
-    blocks.push(hotstrings.map(buildHotstringLine).join("\n\n"));
-  }
-  if (remaps.length > 0) {
-    blocks.push("; --- Key remaps ---");
-    blocks.push(remaps.map(buildRemapBlock).join("\n\n"));
-  }
-
-  return header + "\n" + blocks.join("\n\n");
-}
-
-// --- Parsing an existing .ahk file back into the hotkeys/remaps lists ---
-
-function unescapeFromSend(text) {
-  return text
-    .replace(/\+\{Enter\}/g, "\n") // must run before the generic {x} unescaping below
-    .replace(/\{\{\}/g, "{")
-    .replace(/\{\}\}/g, "}")
-    .replace(/\{\^\}/g, "^")
-    .replace(/\{!\}/g, "!")
-    .replace(/\{\+\}/g, "+")
-    .replace(/\{#\}/g, "#");
-}
-
-function unescapeFromRun(text) {
-  let result = text.trim();
-  if (result.startsWith('"') && result.endsWith('"')) {
-    result = result.slice(1, -1);
-  }
-  return result.replace(/""/g, '"');
-}
-
-// Tries to classify an action line and extract its value.
-// Returns { actionType, actionValue } or null if the line doesn't match any known pattern.
-function parseActionLine(line) {
-  const trimmed = line.trim();
-
-  const sendMatch = trimmed.match(/^Send,\s*(.*)$/i);
-  if (sendMatch) {
-    return { actionType: "send", actionValue: unescapeFromSend(sendMatch[1]) };
-  }
-
-  const runMatch = trimmed.match(/^Run,\s*(.*)$/i);
-  if (runMatch) {
-    const raw = runMatch[1];
-    const isQuoted = raw.trim().startsWith('"') && raw.trim().endsWith('"');
-    if (!isQuoted) {
-      return { actionType: "command", actionValue: raw.trim() };
-    }
-
-    const unescaped = unescapeFromRun(raw);
-    const looksLikeUrl = /^https?:\/\//i.test(unescaped);
-    return {
-      actionType: looksLikeUrl ? "url" : "run",
-      actionValue: unescaped,
-    };
-  }
-
-  return null;
-}
-
-function parseAhkScript(rawText) {
-  const text = rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
-  const lines = text.split(/\r\n|\r|\n/);
-
-  const headerLines = lines.slice(0, 5);
-  const hasSignature = headerLines.some((l) => l.trim().startsWith(AHKGEN_SIGNATURE_PREFIX));
-
-  if (!hasSignature) {
-    return {
-      success: false,
-      error: t("error.missingSignature"),
-    };
-  }
-
-  const parsedHotkeys = [];
-  const parsedRemaps = [];
-  const parsedHotstrings = [];
-  let skippedCount = 0;
-
-  function getPrecedingComment(index) {
-    if (index <= 0) return "";
-    const prevTrimmed = lines[index - 1].trim();
-    if (
-      prevTrimmed.startsWith(";") &&
-      !prevTrimmed.startsWith(AHKGEN_SIGNATURE_PREFIX) &&
-      prevTrimmed !== "; AutoHotkey v1" &&
-      prevTrimmed !== "; --- Hotkeys ---" &&
-      prevTrimmed !== "; --- Hotstrings ---" &&
-      prevTrimmed !== "; --- Key remaps ---"
-    ) {
-      return prevTrimmed.slice(1).trim();
-    }
-    return "";
-  }
-
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    const trimmed = line.trim();
-
-    // Hotstring line: ":options:trigger::replacement" (always starts with a leading colon).
-    // Checked before the remap pattern below, since both look like "x::y" but hotstrings
-    // are distinguished by that leading colon.
-    const hotstringMatch = trimmed.match(/^:([^:]*):([^:]+)::(.*)$/);
-    // Remap line: "from::to" (no action, no return - both sides present on one line)
-    const remapMatch = trimmed.match(/^(.+)::(.+)$/);
-    // Hotkey line: "prefix::" (nothing after the final "::")
-    const hotkeyMatch = trimmed.match(/^(.+)::$/);
-
-    if (hotstringMatch) {
-      const optionsStr = hotstringMatch[1];
-      const trigger = hotstringMatch[2];
-      const replacement = hotstringMatch[3];
-      const comment = getPrecedingComment(i);
-
-      parsedHotstrings.push({
-        trigger,
-        replacement,
-        autoReplace: optionsStr.includes("*"),
-        caseSensitive: optionsStr.includes("C"),
-        insideWord: optionsStr.includes("?"),
-        rawText: optionsStr.includes("R"),
-        comment,
-      });
-      i += 1;
-      continue;
-    } else if (hotkeyMatch) {
-      const prefix = hotkeyMatch[1];
-      const comment = getPrecedingComment(i);
-
-      // A hotkey block normally looks like: prefix:: / action / return
-      // But if a per-hotkey SendMode override was set, there's an extra line in between:
-      // prefix:: / SendMode, X / action / return
-      let cursor = i + 1;
-      let sendMode = "Input";
-      const possibleSendModeLine = (lines[cursor] || "").trim();
-      const sendModeMatch = possibleSendModeLine.match(/^SendMode,\s*(\w+)$/i);
-      if (sendModeMatch) {
-        sendMode = sendModeMatch[1];
-        cursor += 1;
-      }
-
-      const actionLine = lines[cursor] || "";
-      const returnLine = (lines[cursor + 1] || "").trim();
-      const parsedAction = parseActionLine(actionLine);
-
-      if (parsedAction && returnLine.toLowerCase() === "return") {
-        parsedHotkeys.push({
-          prefix,
-          actionType: parsedAction.actionType,
-          actionValue: parsedAction.actionValue,
-          sendMode: parsedAction.actionType === "send" ? sendMode : "Input",
-          comment,
-        });
-        i = cursor + 2;
-        continue;
-      } else {
-        skippedCount++;
-        i += 1;
-        continue;
-      }
-    } else if (remapMatch) {
-      const fromPrefix = remapMatch[1];
-      const toPrefix = remapMatch[2];
-      const comment = getPrecedingComment(i);
-
-      parsedRemaps.push({ fromPrefix, toPrefix, comment });
-      i += 1;
-      continue;
-    }
-
-    i += 1;
-  }
-
-  return { success: true, hotkeys: parsedHotkeys, remaps: parsedRemaps, hotstrings: parsedHotstrings, skippedCount };
-}
+// AHK generation and parsing live in pure modules under src/ahk.
 
 // --- Rendering: Hotkeys list ---
 
@@ -1188,7 +674,12 @@ function escapeHtml(str) {
 }
 
 function renderScriptPreview() {
-  scriptPreviewEl.value = buildFullScript();
+  scriptPreviewEl.value = buildFullScript({
+    version: AHKGEN_VERSION,
+    hotkeys,
+    remaps,
+    hotstrings,
+  });
 }
 
 // Keeps the entry count visible on each mode tab, so switching tabs doesn't hide
@@ -1387,8 +878,8 @@ function setRemapFormError(msg) {
 function handleAddOrSaveRemap() {
   clearRemapFormError();
 
-  const fromPrefix = buildPrefix(remapFromMods, remapFromKey);
-  const toPrefix = buildPrefix(remapToMods, remapToKey);
+  const fromPrefix = buildPrefix(remapFromMods, remapFromKey, distinguishSides);
+  const toPrefix = buildPrefix(remapToMods, remapToKey, distinguishSides);
   const comment = remapCommentInput.value.trim();
 
   if (!remapFromKey) {
@@ -1698,10 +1189,6 @@ function handleAddOrSaveHotstring() {
     setHotstringFormError(t("error.hotstringTriggerSpaces"));
     return;
   }
-  if (trigger.includes(":")) {
-    setHotstringFormError(t("error.hotstringTriggerColon"));
-    return;
-  }
   if (replacement.length === 0) {
     setHotstringFormError(t("error.hotstringMissingReplacement"));
     return;
@@ -1828,7 +1315,7 @@ async function handleOpenFile() {
     const result = parseAhkScript(rawText);
 
     if (!result.success) {
-      setStatus(result.error, true);
+      setStatus(t(result.errorKey), true);
       return;
     }
 
@@ -1932,13 +1419,7 @@ async function handleResetConfig() {
   settingsStatusEl.className = "status-msg";
 
   try {
-    Object.values(LEGACY_STORAGE_KEYS).forEach((key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (err) {
-        console.warn(`Could not remove legacy preference ${key}:`, err);
-      }
-    });
+    userConfigStore.clearLegacyPreferences();
     await invoke("reset_user_config");
   } catch (err) {
     resetConfigBtn.disabled = false;
@@ -2147,7 +1628,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.warn("Could not load translations:", err);
   }
 
-  await loadUserConfig();
+  await userConfigStore.load();
 
   const savedLayout = loadKeyboardLayoutPreference();
   keyboardLayoutSelects.forEach((select) => {

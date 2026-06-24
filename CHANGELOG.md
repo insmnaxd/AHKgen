@@ -7,17 +7,35 @@ All notable changes in this project will be documented in this file.
 ### Next
 
 - Catching key inputs.
+- Expanded keyboard GUI.
+- Mouse input.
 
 ### Later
 
 - More languages (CN :cn:, JP :jp:).
-- Expanded keyboard GUI.
-- Mouse input.
 
 ### Ideas
 
 - Save as .ahk and launch.
 - Add .ahk to shell:startup.
+- Sandbox to test .ahk files
+
+## [1.0.0-alpha.2] - 2026-06-24
+
+### Added
+
+- Validation:
+    - Added round-trip tests.
+
+### Changed
+
+- Phase one of refractoring; separated AHK logic, parsing and config from `main.js`.
+- Hotstrings containing a colon (`:`) are now allowed and parsed correctly.
+
+### Fixed
+
+- Fixed parsing issues with curly braces (`{}`).
+- Fixed parsing issues with `Send` text string being next to a `%` character.
 
 ## [1.0.0-alpha.1] - 2026-06-24
 

@@ -1,11 +1,12 @@
 {
   "name": "AHKgen",
   "private": true,
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
-    "bump": "node scripts/bump.cjs"
+    "bump": "node scripts/bump.cjs",
+    "test": "node --test --test-isolation=none"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
