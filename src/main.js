@@ -1,6 +1,8 @@
 import { buildFullScript } from "./ahk/generator.js";
 import { parseAhkScript } from "./ahk/parser.js";
 import { createUserConfigStore } from "./config/user-config.js";
+import { createI18n, resolveSupportedLanguage } from "./i18n/index.js";
+import { findDuplicateHotstringIndex } from "./hotstrings/duplicates.js";
 import { getKeyboardLayoutMap, isSupportedKeyboardLayout } from "./keyboard/layouts.js";
 import {
   buildPrefix,
@@ -8,10 +10,12 @@ import {
   parsePrefix,
   toggleModifierInSet,
 } from "./keyboard/prefixes.js";
+import { createThemeController } from "./ui/theme.js";
+import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 
 // --- App version ---
 
-const AHKGEN_VERSION = "v1.0.0-alpha.2";
+const AHKGEN_VERSION = "v1.0.0-alpha.3";
 
 const { writeTextFile, readTextFile } = window.__TAURI__.fs;
 const { save, open } = window.__TAURI__.dialog;
@@ -83,23 +87,12 @@ let scriptPreviewEl;
 let scriptPreviewSection;
 let copyBtn, saveBtn, openFileBtn, actionStatusEl;
 let resetConfigBtn, settingsStatusEl;
+let themeController, titlebarController;
 
 // --- Localization ---
 
-const DEFAULT_LANGUAGE = "en";
-const SUPPORTED_LANGUAGES = ["en", "pl", "es", "de", "fr", "it", "pt"];
-const TRANSLATION_FILES = {
-  en: "./i18n/en.json",
-  pl: "./i18n/pl.json",
-  es: "./i18n/es.json",
-  de: "./i18n/de.json",
-  fr: "./i18n/fr.json",
-  it: "./i18n/it.json",
-  pt: "./i18n/pt.json",
-};
-let currentLanguage = DEFAULT_LANGUAGE;
-
-const I18N = {};
+const i18n = createI18n();
+const t = (key, values = {}) => i18n.t(key, values);
 
 // Field configuration for each action type (labels, placeholders, hints)
 const ACTION_CONFIG = {
@@ -132,45 +125,6 @@ const userConfigStore = createUserConfigStore({
   isKeyboardLayout: isSupportedKeyboardLayout,
 });
 
-async function loadTranslations() {
-  await Promise.all(
-    Object.entries(TRANSLATION_FILES).map(async ([language, filePath]) => {
-      const response = await fetch(filePath);
-      if (!response.ok) {
-        throw new Error(`Could not load translation file ${filePath}: ${response.status}`);
-      }
-      I18N[language] = await response.json();
-    })
-  );
-}
-
-function t(key, values = {}) {
-  const template = I18N[currentLanguage]?.[key] ?? I18N[DEFAULT_LANGUAGE]?.[key] ?? key;
-  return template.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? `{${name}}`);
-}
-
-function resolveSupportedLanguage(locale) {
-  if (!locale) return null;
-  const normalized = locale.toLowerCase();
-  if (SUPPORTED_LANGUAGES.includes(normalized)) return normalized;
-
-  const base = normalized.split("-")[0];
-  return SUPPORTED_LANGUAGES.includes(base) ? base : null;
-}
-
-function detectSystemLanguage() {
-  const candidates = Array.isArray(navigator.languages) && navigator.languages.length > 0
-    ? navigator.languages
-    : [navigator.language];
-
-  for (const locale of candidates) {
-    const supported = resolveSupportedLanguage(locale);
-    if (supported) return supported;
-  }
-
-  return DEFAULT_LANGUAGE;
-}
-
 function getSavedLanguagePreference() {
   return resolveSupportedLanguage(userConfigStore.get().language);
 }
@@ -180,36 +134,23 @@ function saveLanguagePreference(language) {
 }
 
 function setLanguage(language, persist = false) {
-  currentLanguage = resolveSupportedLanguage(language) || DEFAULT_LANGUAGE;
+  const currentLanguage = i18n.setLanguage(language);
   if (persist) saveLanguagePreference(currentLanguage);
   applyTranslations();
 }
 
 function initLanguage() {
-  setLanguage(getSavedLanguagePreference() || detectSystemLanguage());
+  setLanguage(getSavedLanguagePreference() || i18n.detectLanguage());
 }
 
 function applyTranslations() {
-  document.documentElement.lang = currentLanguage;
-  if (languageSelect) languageSelect.value = currentLanguage;
-
-  document.querySelectorAll("[data-i18n]").forEach((el) => {
-    el.textContent = t(el.dataset.i18n);
-  });
-  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
-    el.title = t(el.dataset.i18nTitle);
-  });
-  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
-    el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
-  });
-  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-    el.placeholder = t(el.dataset.i18nPlaceholder);
-  });
+  i18n.applyToDocument(document);
+  if (languageSelect) languageSelect.value = i18n.getLanguage();
 
   if (actionType) handleActionTypeChange();
   updateFormModeLabels();
   if (remapFromDisplay && remapToDisplay) updateRemapDisplays();
-  updateTitlebarMaximizeLabel();
+  titlebarController?.updateMaximizeLabel();
 }
 
 function updateFormModeLabels() {
@@ -231,14 +172,6 @@ function updateFormModeLabels() {
   if (addRemapBtn) {
     addRemapBtn.textContent = t(editingRemapIndex === null ? "button.addRemap" : "button.saveChanges");
   }
-}
-
-function updateTitlebarMaximizeLabel() {
-  const maximizeBtn = document.querySelector("#titlebar-maximize");
-  if (!maximizeBtn || !maximizeBtn.dataset.maximized) return;
-
-  maximizeBtn.title = maximizeBtn.dataset.maximized === "true" ? t("titlebar.restore") : t("titlebar.maximize");
-  maximizeBtn.setAttribute("aria-label", maximizeBtn.title);
 }
 
 // Whether to distinguish left/right variants of Ctrl, Shift, Alt, Win (global setting)
@@ -280,53 +213,12 @@ function loadKeyboardLayoutPreference() {
   return isSupportedKeyboardLayout(keyboardLayout) ? keyboardLayout : "qwerty";
 }
 
-// --- Light / dark theme ---
-// Default behavior: follow the OS setting (prefers-color-scheme). If the user manually
-// toggles the theme button, that explicit choice is saved and permanently overrides
-// the OS setting from then on (no "auto" state to go back to, by design).
-
 function getSavedThemePreference() {
   return userConfigStore.get().theme; // "light" | "dark" | null (never set)
 }
 
 function saveThemePreference(theme) {
   userConfigStore.update({ theme });
-}
-
-function systemPrefersDark() {
-  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  themeToggleCheckbox.checked = theme === "dark";
-}
-
-function handleThemeToggle() {
-  const next = themeToggleCheckbox.checked ? "dark" : "light";
-  applyTheme(next);
-  saveThemePreference(next);
-}
-
-function initTheme() {
-  const saved = getSavedThemePreference();
-  if (saved === "light" || saved === "dark") {
-    applyTheme(saved);
-    return;
-  }
-
-  // No explicit user choice yet - follow the OS setting, and keep following it
-  // live if the user changes their OS theme while the app is open.
-  applyTheme(systemPrefersDark() ? "dark" : "light");
-
-  if (window.matchMedia) {
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-      // Only react to OS changes if the user still hasn't made an explicit manual choice
-      if (!getSavedThemePreference()) {
-        applyTheme(e.matches ? "dark" : "light");
-      }
-    });
-  }
 }
 
 function updateModifierLabels() {
@@ -760,7 +652,8 @@ function handleAddOrSaveHotkey() {
 
   const prefix = buildHotkeyPrefix();
   const type = actionType.value;
-  const value = actionValue.value.trim();
+  const rawValue = actionValue.value;
+  const value = actionType.value === "send" ? rawValue : rawValue.trim();
   const comment = commentInput.value.trim();
   const sendMode = type === "send" && sendModeEventToggle.checked ? "Event" : "Input";
 
@@ -1174,7 +1067,7 @@ function handleAddOrSaveHotstring() {
   clearHotstringFormError();
 
   const trigger = hotstringTriggerInput.value.trim();
-  const replacement = hotstringReplacementInput.value.trim();
+  const replacement = hotstringReplacementInput.value;
   const autoReplace = hotstringOptAuto.checked;
   const caseSensitive = hotstringOptCase.checked;
   const insideWord = hotstringOptInside.checked;
@@ -1194,11 +1087,12 @@ function handleAddOrSaveHotstring() {
     return;
   }
 
-  // Duplicates only matter when both the trigger AND case-sensitivity match, since
-  // ":C:Btw" and ":Btw" can coexist as genuinely different hotstrings in AHK.
-  const duplicateIndex = hotstrings.findIndex(
-    (hs) => hs.trigger === trigger && hs.caseSensitive === caseSensitive
-  );
+  // Case-insensitive triggers collide regardless of letter case. A case-sensitive
+  // variant remains a separate hotstring and may coexist with an insensitive one.
+  const duplicateIndex = findDuplicateHotstringIndex(hotstrings, {
+    trigger,
+    caseSensitive,
+  });
   const isDuplicate = duplicateIndex !== -1 && duplicateIndex !== editingHotstringIndex;
   if (isDuplicate) {
     setHotstringFormError(t("error.duplicateHotstring", { trigger }));
@@ -1338,7 +1232,7 @@ async function handleOpenFile() {
     let addedHotstrings = 0;
     let duplicateHotstrings = 0;
     for (const hs of result.hotstrings) {
-      if (hotstrings.some((existing) => existing.trigger === hs.trigger && existing.caseSensitive === hs.caseSensitive)) {
+      if (findDuplicateHotstringIndex(hotstrings, hs) !== -1) {
         duplicateHotstrings++;
       } else {
         hotstrings.push(hs);
@@ -1428,57 +1322,10 @@ async function handleResetConfig() {
   }
 }
 
-// --- Version display ---
-// Pulls AHKGEN_VERSION (declared at the very top of this file) into the
-// .version-tag span in the header, so the HTML never has to hardcode it.
-
-function injectVersion() {
-  const versionTagEl = document.querySelector(".version-tag");
-  if (versionTagEl) versionTagEl.textContent = AHKGEN_VERSION;
-}
-
-// --- Custom title bar controls ---
-// Native window decorations are disabled (decorations: false in tauri.conf.json),
-// so minimize/maximize/close have to be wired up manually through the Tauri window API.
-
-function initTitlebar() {
-  const appWindow = getCurrentWindow();
-  const minimizeBtn = document.querySelector("#titlebar-minimize");
-  const maximizeBtn = document.querySelector("#titlebar-maximize");
-  const closeBtn = document.querySelector("#titlebar-close");
-
-  minimizeBtn.addEventListener("click", () => appWindow.minimize());
-  closeBtn.addEventListener("click", () => appWindow.close());
-
-  maximizeBtn.addEventListener("click", () => appWindow.toggleMaximize());
-
-  // Swap the maximize icon for a "restore" icon (two overlapping squares) once the window
-  // is actually maximized, and keep it in sync if the user resizes/snaps via other means
-  // (e.g. Win+Up, dragging to the top edge, double-clicking the title bar).
-  function setMaximizeIcon(isMaximized) {
-    maximizeBtn.innerHTML = isMaximized
-      ? '<svg viewBox="0 0 10 10" width="10" height="10"><rect x="2.5" y="0.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1" /><rect x="0.5" y="2.5" width="7" height="7" fill="var(--bg)" stroke="currentColor" stroke-width="1" /></svg>'
-      : '<svg viewBox="0 0 10 10" width="10" height="10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1" /></svg>';
-    maximizeBtn.dataset.maximized = isMaximized ? "true" : "false";
-    updateTitlebarMaximizeLabel();
-  }
-
-  appWindow.isMaximized().then(setMaximizeIcon);
-  appWindow.onResized(() => {
-    appWindow.isMaximized().then(setMaximizeIcon);
-  });
-
-  // Double-clicking the empty drag region toggles maximize, matching native title bar behavior.
-  document.querySelector(".titlebar").addEventListener("dblclick", (e) => {
-    if (e.target.closest(".titlebar-btn")) return;
-    appWindow.toggleMaximize();
-  });
-}
-
 // --- Initialization ---
 
 window.addEventListener("DOMContentLoaded", async () => {
-  injectVersion();
+  injectVersion(document, AHKGEN_VERSION);
 
   modeTabs = document.querySelectorAll(".mode-tab");
   tabBadgeHotkeys = document.querySelector("#tab-badge-hotkeys");
@@ -1556,6 +1403,19 @@ window.addEventListener("DOMContentLoaded", async () => {
   resetConfigBtn = document.querySelector("#reset-config-btn");
   settingsStatusEl = document.querySelector("#settings-status");
 
+  themeController = createThemeController({
+    documentLike: document,
+    windowLike: window,
+    toggle: themeToggleCheckbox,
+    getSavedTheme: getSavedThemePreference,
+    saveTheme: saveThemePreference,
+  });
+  titlebarController = createTitlebarController({
+    documentLike: document,
+    appWindow: getCurrentWindow(),
+    t,
+  });
+
   // Hotkeys mode keyboard
   keyboardEl.querySelectorAll(".kb-key").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1614,16 +1474,13 @@ window.addEventListener("DOMContentLoaded", async () => {
   languageSelect.addEventListener("change", handleLanguageChange);
   resetConfigBtn.addEventListener("click", handleResetConfig);
 
-  // Theme toggle
-  themeToggleCheckbox.addEventListener("change", handleThemeToggle);
-
   // Shared actions
   copyBtn.addEventListener("click", handleCopy);
   saveBtn.addEventListener("click", handleSave);
   openFileBtn.addEventListener("click", handleOpenFile);
 
   try {
-    await loadTranslations();
+    await i18n.load();
   } catch (err) {
     console.warn("Could not load translations:", err);
   }
@@ -1639,8 +1496,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   initLanguage();
   updateModifierLabels();
 
-  initTheme();
-  initTitlebar();
+  themeController.init();
+  titlebarController.init();
 
   renderAll();
 });

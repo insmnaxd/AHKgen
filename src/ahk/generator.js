@@ -53,7 +53,10 @@ export function buildHotstringLine(hotstring) {
   if (hotstring.rawText) options += "R";
 
   const optionsPart = options ? `:${options}:` : "::";
-  lines.push(`${optionsPart}${escapeHotstringTrigger(hotstring.trigger)}::${hotstring.replacement}`);
+  const replacement = /[ \t]$/.test(hotstring.replacement)
+    ? `${hotstring.replacement}\``
+    : hotstring.replacement;
+  lines.push(`${optionsPart}${escapeHotstringTrigger(hotstring.trigger)}::${replacement}`);
   return lines.join("\n");
 }
 

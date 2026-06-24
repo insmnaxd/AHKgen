@@ -2,34 +2,29 @@
 
 All notable changes in this project will be documented in this file.
 
-## [Planned]
+See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
-### Next
-
-- Catching key inputs.
-- Expanded keyboard GUI.
-- Mouse input.
-
-### Later
-
-- More languages (CN :cn:, JP :jp:).
-
-### Ideas
-
-- Save as .ahk and launch.
-- Add .ahk to shell:startup.
-- Sandbox to test .ahk files
-
-## [1.0.0-alpha.2] - 2026-06-24
-
-### Added
-
-- Validation:
-    - Added round-trip tests.
+## [1.0.0-alpha.3] - 2026-06-25
 
 ### Changed
 
-- Phase one of refractoring; separated AHK logic, parsing and config from `main.js`.
+- Phase two of refactoring; separated i18n and GUI modules from `main.js`.
+
+### Removed
+
+- Removed unused Rust commands, Tauri plugins, Cargo dependencies and permissions.
+
+### Fixed
+
+- Path and URL generation now correctly handles commas (`,`).
+- Fixed duplicate detection in `Hotstrings` mode.
+- Fixed parsing of whitespace characters.
+
+## [1.0.0-alpha.2] - 2026-06-24
+
+### Changed
+
+- Phase one of refactoring; separated AHK logic, generator, parsing and user config from `main.js`.
 - Hotstrings containing a colon (`:`) are now allowed and parsed correctly.
 
 ### Fixed
@@ -40,6 +35,7 @@ All notable changes in this project will be documented in this file.
 ## [1.0.0-alpha.1] - 2026-06-24
 
 ### Added
+
 - `Settings` tab.
 - `Reset configuration` button.
 - Animations on the item lists.
@@ -207,7 +203,6 @@ AHKgen went through a major revision and was completely rebuilt, moving from Pyt
     - Trigger inside words
 - `Distinguish L/R keys` option.
 - Existing .ahk file import.
-
 
 ### Changed
 

@@ -10,7 +10,6 @@ dist/
 dist-ssr/
 build/
 scripts/
-test/
 
 # Environment variables
 .env
@@ -39,7 +38,3 @@ Thumbs.db
 src-tauri/target/
 src-tauri/gen/
 src-tauri/**/*.log
-
-# Optional - if you don't want to track built icons (sometimes people do)
-# src-tauri/icons/*.ico
-# src-tauri/icons/*.icns

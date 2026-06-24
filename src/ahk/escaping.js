@@ -9,12 +9,18 @@ export function escapeForSend(text) {
     .replace(/!/g, "{!}")
     .replace(/\+/g, "{+}")
     .replace(/#/g, "{#}")
+    .replace(/\t/g, "{Tab}")
+    .replace(/^ +| +$/g, (spaces) => "{Space}".repeat(spaces.length))
     .replace(/\r\n|\r|\n/g, "+{Enter}");
 }
 
 export function unescapeFromSend(text) {
   return text
     .replace(/\+\{Enter\}/g, "\n")
+    // Decode generated whitespace tokens before literal braces. This prevents
+    // escaped user text such as "{Space}" from being mistaken for a token.
+    .replace(/\{Tab\}/g, "\t")
+    .replace(/\{Space\}/g, " ")
     .replace(/\{\{\}/g, "{")
     .replace(/\{\}\}/g, "}")
     .replace(/\{\^\}/g, "^")
@@ -27,9 +33,13 @@ export function unescapeFromSend(text) {
     .replace(/``/g, "`");
 }
 
-// AHK v1 uses doubled quotes inside a quoted Run target.
+// AHK v1 uses doubled quotes inside a quoted Run target. Commas must be
+// escaped because Run is a command whose parameters are comma-separated.
 export function escapeForRun(text) {
-  return text.replace(/"/g, '""');
+  return text
+    .replace(/`/g, "``")
+    .replace(/,/g, "`,")
+    .replace(/"/g, '""');
 }
 
 export function unescapeFromRun(text) {
@@ -37,7 +47,10 @@ export function unescapeFromRun(text) {
   if (result.startsWith('"') && result.endsWith('"')) {
     result = result.slice(1, -1);
   }
-  return result.replace(/""/g, '"');
+  return result
+    .replace(/""/g, '"')
+    .replace(/`,/g, ",")
+    .replace(/``/g, "`");
 }
 
 // A backtick makes the following character literal in AHK v1. Escaping every

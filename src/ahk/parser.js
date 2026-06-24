@@ -22,7 +22,7 @@ export function parseHotstringDefinition(line) {
       return {
         options,
         trigger: unescapeHotstringTrigger(encodedTrigger),
-        replacement: line.slice(i + 2),
+        replacement: line.slice(i + 2).replace(/([ \t])`$/, "$1"),
       };
     }
   }
@@ -31,14 +31,16 @@ export function parseHotstringDefinition(line) {
 }
 
 export function parseActionLine(line) {
-  const trimmed = line.trim();
+  const commandLine = line.trimStart();
 
-  const sendMatch = trimmed.match(/^Send,\s*(.*)$/i);
+  // Consume at most one separator space after the comma. Any additional
+  // whitespace belongs to the text being sent.
+  const sendMatch = commandLine.match(/^Send,[ \t]?(.*)$/i);
   if (sendMatch) {
     return { actionType: "send", actionValue: unescapeFromSend(sendMatch[1]) };
   }
 
-  const runMatch = trimmed.match(/^Run,\s*(.*)$/i);
+  const runMatch = commandLine.trimEnd().match(/^Run,\s*(.*)$/i);
   if (runMatch) {
     const raw = runMatch[1];
     const isQuoted = raw.trim().startsWith('"') && raw.trim().endsWith('"');
@@ -92,8 +94,9 @@ export function parseAhkScript(rawText) {
 
   let i = 0;
   while (i < lines.length) {
-    const trimmed = lines[i].trim();
-    const hotstringDefinition = parseHotstringDefinition(trimmed);
+    const line = lines[i];
+    const trimmed = line.trim();
+    const hotstringDefinition = parseHotstringDefinition(line.trimStart());
     const remapMatch = trimmed.match(/^(.+)::(.+)$/);
     const hotkeyMatch = trimmed.match(/^(.+)::$/);
 
