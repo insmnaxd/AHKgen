@@ -399,3 +399,65 @@ test("parser rejects scripts without the AHKgen signature", () => {
     errorKey: "error.missingSignature",
   });
 });
+
+test("parser skips hotstrings containing unsupported options", () => {
+  const script = [
+    "; Made with AHKgen v1.0.0-test",
+    "; AutoHotkey v1",
+    "#NoEnv",
+    "#SingleInstance, Force",
+    "SendMode, Input",
+    "SetWorkingDir, %A_ScriptDir%",
+    "",
+    "; --- Hotstrings ---",
+    'Hotstring(":*c:valid", "accepted")',
+    'Hotstring(":X:custom", "MsgBox")',
+    'Hotstring(":B0:manual-backspace", "replacement")',
+  ].join("\n");
+
+  const parsed = parseAhkScript(script);
+
+  assert.equal(parsed.success, true);
+  assert.deepEqual(
+    parsed.hotstrings.map((hotstring) => hotstring.trigger),
+    ["valid"]
+  );
+  assert.equal(parsed.hotstrings[0].caseSensitive, true);
+  assert.equal(parsed.skippedCount, 2);
+});
+
+test("parser skips hotkeys containing unsupported SendMode values", () => {
+  const script = [
+    "; Made with AHKgen v1.0.0-test",
+    "; AutoHotkey v1",
+    "#NoEnv",
+    "#SingleInstance, Force",
+    "SendMode, Input",
+    "SetWorkingDir, %A_ScriptDir%",
+    "",
+    "^1::",
+    "    SendMode, event",
+    "    Send, accepted",
+    "return",
+    "",
+    "^2::",
+    "    SendMode, Play",
+    "    Send, unsupported",
+    "return",
+    "",
+    "^3::",
+    "    SendMode, SomethingUnknown",
+    "    Send, unsupported",
+    "return",
+  ].join("\n");
+
+  const parsed = parseAhkScript(script);
+
+  assert.equal(parsed.success, true);
+  assert.deepEqual(
+    parsed.hotkeys.map((hotkey) => hotkey.prefix),
+    ["^1"]
+  );
+  assert.equal(parsed.hotkeys[0].sendMode, "Event");
+  assert.equal(parsed.skippedCount, 2);
+});

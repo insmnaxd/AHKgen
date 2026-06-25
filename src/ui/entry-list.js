@@ -60,16 +60,6 @@ export function createEntryListUi({
         if (event.target.closest("button")) return;
         handleEdit(Number.parseInt(item.dataset.index, 10));
       });
-      item.addEventListener("keydown", (event) => {
-        if (
-          event.target !== item ||
-          (event.key !== "Enter" && event.key !== " ")
-        ) {
-          return;
-        }
-        event.preventDefault();
-        handleEdit(Number.parseInt(item.dataset.index, 10));
-      });
       item.addEventListener("mouseenter", () => {
         if (description) expand(item);
       });

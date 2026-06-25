@@ -2,6 +2,7 @@ import { createUserConfigStore } from "./config/user-config.js";
 import { createHotkeysController } from "./hotkeys/controller.js";
 import { createHotstringsController } from "./hotstrings/controller.js";
 import { createI18n, resolveSupportedLanguage } from "./i18n/index.js";
+import { createInputCapture } from "./input/capture.js";
 import {
   getKeyboardLayoutMap,
   isSupportedKeyboardLayout,
@@ -10,13 +11,21 @@ import { createRemapsController } from "./remaps/controller.js";
 import { createEntryListUi } from "./ui/entry-list.js";
 import { escapeHtml } from "./ui/html.js";
 import { createModesController } from "./ui/modes.js";
+import { createMouseOnlyInteraction } from "./ui/mouse-only-interaction.js";
 import { createScriptWorkspace } from "./ui/script-workspace.js";
 import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 
-const AHKGEN_VERSION = "v1.0.0-alpha.5";
+const AHKGEN_VERSION = "v1.0.0-alpha.6";
 
-const { fs, dialog, clipboardManager, window: tauriWindow, core } =
+const {
+  fs,
+  dialog,
+  clipboardManager,
+  window: tauriWindow,
+  event: tauriEvent,
+  core,
+} =
   window.__TAURI__;
 const entries = {
   hotkeys: [],
@@ -108,6 +117,21 @@ window.addEventListener("DOMContentLoaded", async () => {
   };
 
   const entryListUi = createEntryListUi({ windowLike: window });
+  const inputCapture = createInputCapture({
+    documentLike: document,
+    setNativeCaptureEnabled: (enabled) => {
+      core.invoke("set_windows_key_capture", { enabled }).catch((error) => {
+        console.warn("Could not toggle native Windows-key capture:", error);
+      });
+    },
+  });
+  await tauriEvent.listen("native-windows-key", ({ payload }) => {
+    inputCapture.handleNativeModifier(payload);
+  });
+  const mouseOnlyInteraction = createMouseOnlyInteraction({
+    documentLike: document,
+    MutationObserverClass: window.MutationObserver,
+  });
   const refreshOutput = () => {
     scriptWorkspace.render();
     updateTabBadges(badges);
@@ -135,6 +159,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     t,
     escapeHtml,
     getDistinguishSides: () => distinguishSides,
+    inputCapture,
     ...entryListUi,
     browseForFile: () => dialog.open({ multiple: false }),
     onBrowseError: (error) => {
@@ -162,6 +187,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     t,
     escapeHtml,
     getDistinguishSides: () => distinguishSides,
+    inputCapture,
     ...entryListUi,
     onChange: () => {
       remapsController.render();
@@ -252,5 +278,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   scriptWorkspace.init();
   themeController.init();
   titlebarController.init();
+  inputCapture.init();
+  mouseOnlyInteraction.init();
   renderAll();
 });

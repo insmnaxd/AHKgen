@@ -28,6 +28,8 @@
   "form.hotkey.edit": "Modifier le raccourci",
   "form.selectedHotkey": "Raccourci sélectionné",
   "placeholder.selectedHotkey": "Cliquez sur les touches ci-dessous pour créer un raccourci...",
+  "capture.prompt": "Appuyez sur une touche ou un bouton de souris...",
+  "capture.instructions": "Cliquez sur le champ, appuyez sur les modificateurs un par un, puis sur la touche finale. Pour la souris, cliquez ou faites défiler dans le champ surligné. Cliquez à l’extérieur pour annuler.",
   "button.clear": "Effacer",
   "form.action": "Action",
   "action.send.option": "Envoyer du texte",

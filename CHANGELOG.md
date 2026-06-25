@@ -4,6 +4,17 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-alpha.6] - 2026-06-??
+
+### Changed
+
+- Script header is now remade during import.
+- Unrecognized syntax and options are now skipped when importing a tampered .ahk file; the file is only rejected if nothing recognizable remains.
+
+### Fixed
+
+- UI can only be interacted with mouse from now on.
+
 ## [1.0.0-alpha.5] - 2026-06-25
 
 ### Added
@@ -16,8 +27,8 @@ See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
 ### Fixed
 
+- Improved hotstring generation.
 - `Run` generation now correctly handles `%`.
-- Corrected how parser treats colons (`:`) in `Hotstrings`.
 
 ## [1.0.0-alpha.4] - 2026-06-24
 
@@ -127,7 +138,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
 - Added light theme.
 - Added a button to switch between dark and light themes.
-- App will read the initial theme from system settings.
+- App reads the initial theme from system settings.
 
 ## [0.8.0] - 2026-06-21
 
@@ -249,7 +260,7 @@ AHKgen went through a major revision and was completely rebuilt, moving from Pyt
 
 - Keys are now toggleable.
 - Toggled keys change their colour to darker.
-- Error pop-ups will always appear in the middle of the main window.
+- Error pop-ups now always appear in the middle of the main window.
 
 ### Fixed
 

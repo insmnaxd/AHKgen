@@ -28,6 +28,8 @@
   "form.hotkey.edit": "Hotkey bearbeiten",
   "form.selectedHotkey": "Ausgewählter Hotkey",
   "placeholder.selectedHotkey": "Klicke unten auf Tasten, um einen Hotkey zu erstellen...",
+  "capture.prompt": "Drücke eine Taste oder Maustaste...",
+  "capture.instructions": "Klicke in das Feld, drücke die Modifikatortasten nacheinander und dann die abschließende Taste. Für die Maus klicke oder scrolle im hervorgehobenen Feld. Klicke außerhalb, um abzubrechen.",
   "button.clear": "Leeren",
   "form.action": "Aktion",
   "action.send.option": "Text senden",

@@ -1,4 +1,5 @@
 import {
+  buildPrefix,
   isModifierActive,
   parsePrefix,
   toggleModifierInSet,
@@ -17,6 +18,7 @@ export function createHotkeysController({
   getDistinguishSides,
   editableEntries,
   animations,
+  inputCapture,
   browseForFile,
   onBrowseError,
   onChange,
@@ -44,6 +46,7 @@ export function createHotkeysController({
   let selectedModifiers = new Set();
   let selectedKey = null;
   let editingIndex = null;
+  let layoutMap = {};
 
   function getPrefix() {
     return createHotkeyEntry({
@@ -74,7 +77,39 @@ export function createHotkeysController({
   }
 
   function updateDisplay() {
-    elements.selectedDisplay.value = getPrefix();
+    renderDisplay(
+      selectedModifiers,
+      selectedKey,
+      t("placeholder.selectedHotkey")
+    );
+  }
+
+  function renderDisplay(modifiers, key, fallback, suffix = "") {
+    const modifierText = buildPrefix(
+      modifiers,
+      null,
+      getDistinguishSides()
+    );
+    if (!modifierText && !key) {
+      elements.selectedDisplay.innerHTML = `<span class="combination-placeholder">${escapeHtml(
+        fallback
+      )}</span>`;
+      return;
+    }
+
+    elements.selectedDisplay.innerHTML = [
+      modifierText
+        ? `<span class="combination-modifiers">${escapeHtml(
+            modifierText
+          )}</span>`
+        : "",
+      key
+        ? `<span class="combination-key">${escapeHtml(key)}</span>`
+        : "",
+      suffix
+        ? `<span class="combination-suffix">${escapeHtml(suffix)}</span>`
+        : "",
+    ].join("");
   }
 
   function toggleModifier(modifierKey) {
@@ -223,7 +258,7 @@ export function createHotkeysController({
             )}</strong>${sendModeTag}</span>`;
 
         return `
-          <li class="hotkey-item hotkey-item-expandable hotkey-entry${editingClass}" data-index="${index}" tabindex="0">
+          <li class="hotkey-item hotkey-item-expandable hotkey-entry${editingClass}" data-index="${index}" tabindex="-1">
             <div class="hotkey-item-main">
               <span class="entry-prefix">
                 <span class="hotkey-badge">${escapeHtml(hotkey.prefix)}</span>
@@ -318,6 +353,7 @@ export function createHotkeysController({
   }
 
   function applyKeyboardLayout(map) {
+    layoutMap = map;
     elements.keyboard
       .querySelectorAll(".kb-key:not(.kb-modifier)")
       .forEach((button) => {
@@ -342,6 +378,43 @@ export function createHotkeysController({
   }
 
   function init() {
+    inputCapture.register(elements.selectedDisplay, {
+      getLayoutMap: () => layoutMap,
+      onStart: () => {
+        selectedModifiers = new Set();
+        selectedKey = null;
+        updateVisuals();
+        updateDisplay();
+      },
+      onCancel: () => {
+        selectedModifiers = new Set();
+        selectedKey = null;
+        updateVisuals();
+      },
+      onStateChange: (capturing) => {
+        if (capturing) {
+          renderDisplay(new Set(), null, t("capture.prompt"));
+        } else {
+          updateDisplay();
+        }
+      },
+      onProgress: ({ modifiers }) => {
+        selectedModifiers = modifiers;
+        selectedKey = null;
+        updateVisuals();
+        if (modifiers.size > 0) {
+          renderDisplay(modifiers, null, t("capture.prompt"), " …");
+        } else {
+          renderDisplay(new Set(), null, t("capture.prompt"));
+        }
+      },
+      onCapture: ({ modifiers, key }) => {
+        selectedModifiers = modifiers;
+        selectedKey = key;
+        updateVisuals();
+        updateDisplay();
+      },
+    });
     elements.keyboard.querySelectorAll(".kb-key").forEach((button) => {
       button.addEventListener("click", () => {
         if (button.classList.contains("kb-modifier")) {

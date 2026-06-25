@@ -6,7 +6,8 @@ See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 
 ## [1.0.0-alpha.6]
 
-- Catching input from keyboard in `Hotkeys` and `Hotstrings`.
+- Capture mode; physical keyboard and mouse buttons can now be used for input in `Hotkeys` and `Remapping`.
+- Remade `Hotkeys` and `Remapping` key selection UX and UI to fit Capture mode.
 
 ## [1.0.0-alpha.7]
 
@@ -35,3 +36,4 @@ See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 - Save as .ahk and launch.
 - Add .ahk to shell:startup.
 - Sandbox to test .ahk files.
+- Updater

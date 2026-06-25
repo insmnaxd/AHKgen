@@ -803,13 +803,21 @@ textarea,
   gap: 10px;
 }
 
-.selected-hotkey-row input {
+.key-combination-display {
   flex: 1;
-  font-family: "Consolas", "Courier New", monospace;
+  font-family: inherit;
   font-weight: 700;
-  color: var(--accent);
   font-size: 1rem;
   text-align: center;
+}
+
+#selected-hotkey-display {
+  width: 100%;
+  padding: 9px 12px;
+  color: var(--text-muted);
+  background-color: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
 }
 
 #selected-hotkey-display,
@@ -819,8 +827,25 @@ textarea,
 }
 
 #selected-hotkey-display {
-  caret-color: transparent;
-  pointer-events: none;
+  cursor: pointer;
+}
+
+#selected-hotkey-display:focus {
+  border-color: var(--panel-border);
+}
+
+#selected-hotkey-display.capturing-input,
+.remap-target-btn.capturing-input,
+.remap-target-btn.capturing-input:hover,
+.remap-target-btn.capturing-input:focus {
+  border-color: var(--modifier-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--modifier-accent) 28%, transparent);
+  background-color: color-mix(in srgb, var(--modifier-accent) 9%, var(--input-bg));
+  outline: none;
+}
+
+.capture-hint {
+  margin-top: 8px;
 }
 
 .keyboard {
@@ -860,6 +885,18 @@ textarea,
 .kb-key:hover {
   background-color: var(--key-hover-bg);
   border-color: var(--key-hover-border);
+}
+
+.keyboard#keyboard-remap .kb-key.ghost:not(.active) {
+  background-color: color-mix(in srgb, var(--accent) 14%, var(--key-bg));
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--key-border));
+  color: color-mix(in srgb, var(--accent) 58%, var(--text-main));
+  font-weight: 600;
+}
+
+.keyboard#keyboard-remap .kb-key.ghost:not(.active):hover {
+  background-color: color-mix(in srgb, var(--accent) 22%, var(--key-bg));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--key-border));
 }
 
 .kb-key:active {
@@ -1011,7 +1048,7 @@ textarea,
 .remap-target-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   margin-bottom: 16px;
 }
 
@@ -1029,26 +1066,41 @@ textarea,
 
 .remap-target-btn {
   width: 100%;
-  padding: 14px;
-  font-family: "Consolas", "Courier New", monospace;
-  font-size: 1rem;
-  font-weight: 700;
+  padding: 9px 12px;
   color: var(--text-muted);
   background-color: var(--input-bg);
-  border: 2px solid var(--panel-border);
-  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
-  text-align: center;
 }
 
 .remap-target-btn:hover {
   border-color: var(--key-hover-border);
 }
 
-.remap-target-btn.active {
-  border-color: var(--accent);
+.remap-target-btn:focus {
+  outline: none;
+}
+
+.combination-modifiers {
+  color: var(--modifier-accent);
+}
+
+.combination-key {
   color: var(--accent);
+}
+
+.combination-placeholder,
+.combination-suffix {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+#clear-remap-btn {
+  flex: 0 0 auto;
+  min-height: 39px;
+  align-self: flex-end;
 }
 
 .remap-arrow {
@@ -1114,6 +1166,17 @@ textarea,
 .kb-modifier:hover {
   background-color: var(--modifier-hover-bg);
   border-color: var(--modifier-accent);
+}
+
+.keyboard#keyboard-remap .kb-modifier.ghost:not(.active) {
+  background-color: color-mix(in srgb, var(--modifier-accent) 14%, var(--modifier-bg));
+  border-color: color-mix(in srgb, var(--modifier-accent) 38%, var(--modifier-border));
+  color: color-mix(in srgb, var(--modifier-accent) 58%, var(--modifier-text));
+}
+
+.keyboard#keyboard-remap .kb-modifier.ghost:not(.active):hover {
+  background-color: color-mix(in srgb, var(--modifier-accent) 22%, var(--modifier-bg));
+  border-color: color-mix(in srgb, var(--modifier-accent) 55%, var(--modifier-border));
 }
 
 .kb-modifier.active {

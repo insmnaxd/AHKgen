@@ -28,6 +28,8 @@
   "form.hotkey.edit": "Editar atalho",
   "form.selectedHotkey": "Atalho selecionado",
   "placeholder.selectedHotkey": "Clique nas teclas abaixo para criar um atalho...",
+  "capture.prompt": "Prima uma tecla ou botão do rato...",
+  "capture.instructions": "Clique no campo, prima os modificadores um a um e depois a tecla final. Para usar o rato, clique ou desloque dentro do campo realçado. Clique fora para cancelar.",
   "button.clear": "Limpar",
   "form.action": "Ação",
   "action.send.option": "Enviar texto",

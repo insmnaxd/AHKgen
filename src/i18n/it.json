@@ -28,6 +28,8 @@
   "form.hotkey.edit": "Modifica scorciatoia",
   "form.selectedHotkey": "Scorciatoia selezionata",
   "placeholder.selectedHotkey": "Fai clic sui tasti qui sotto per creare una scorciatoia...",
+  "capture.prompt": "Premi un tasto o un pulsante del mouse...",
+  "capture.instructions": "Fai clic sul campo, premi i modificatori uno alla volta e poi il tasto finale. Per il mouse, fai clic o scorri all’interno del campo evidenziato. Fai clic fuori per annullare.",
   "button.clear": "Cancella",
   "form.action": "Azione",
   "action.send.option": "Invia testo",

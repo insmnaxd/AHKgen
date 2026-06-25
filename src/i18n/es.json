@@ -28,6 +28,8 @@
   "form.hotkey.edit": "Editar atajo",
   "form.selectedHotkey": "Atajo seleccionado",
   "placeholder.selectedHotkey": "Haz clic en las teclas de abajo para crear un atajo...",
+  "capture.prompt": "Pulsa una tecla o un botón del ratón...",
+  "capture.instructions": "Haz clic en el campo, pulsa los modificadores uno por uno y después la tecla final. Para usar el ratón, haz clic o desplázate dentro del campo resaltado. Haz clic fuera para cancelar.",
   "button.clear": "Limpiar",
   "form.action": "Acción",
   "action.send.option": "Enviar texto",

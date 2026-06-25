@@ -6,6 +6,20 @@ import {
   unescapeHotstringTrigger,
 } from "./escaping.js";
 
+const SUPPORTED_HOTSTRING_OPTIONS = /^[*C?R]*$/i;
+const SUPPORTED_SEND_MODES = {
+  input: "Input",
+  event: "Event",
+};
+
+export function areHotstringOptionsSupported(options) {
+  return SUPPORTED_HOTSTRING_OPTIONS.test(options);
+}
+
+export function normalizeSupportedSendMode(sendMode) {
+  return SUPPORTED_SEND_MODES[sendMode.toLowerCase()] || null;
+}
+
 export function parseHotstringFunction(line) {
   const match = line.match(
     /^Hotstring\("((?:""|[^"])*)", "((?:""|[^"])*)"\)$/
@@ -133,13 +147,20 @@ export function parseAhkScript(rawText) {
 
     if (hotstringDefinition) {
       const { options, trigger, replacement } = hotstringDefinition;
+      if (!areHotstringOptionsSupported(options)) {
+        skippedCount += 1;
+        i += 1;
+        continue;
+      }
+
+      const normalizedOptions = options.toUpperCase();
       hotstrings.push({
         trigger,
         replacement,
-        autoReplace: options.includes("*"),
-        caseSensitive: options.includes("C"),
-        insideWord: options.includes("?"),
-        rawText: options.includes("R"),
+        autoReplace: normalizedOptions.includes("*"),
+        caseSensitive: normalizedOptions.includes("C"),
+        insideWord: normalizedOptions.includes("?"),
+        rawText: normalizedOptions.includes("R"),
         comment: getPrecedingComment(i),
       });
       i += 1;
@@ -152,8 +173,14 @@ export function parseAhkScript(rawText) {
       let sendMode = "Input";
       const sendModeMatch = (lines[cursor] || "").trim().match(/^SendMode,\s*(\w+)$/i);
       if (sendModeMatch) {
-        sendMode = sendModeMatch[1];
+        const normalizedSendMode = normalizeSupportedSendMode(sendModeMatch[1]);
         cursor += 1;
+        if (!normalizedSendMode) {
+          skippedCount += 1;
+          i = cursor + 2;
+          continue;
+        }
+        sendMode = normalizedSendMode;
       }
 
       const parsedAction = parseActionLine(lines[cursor] || "");

@@ -121,7 +121,7 @@ export function createHotstringsController({
             )}</strong>${optionsLabel}</span>`;
 
         return `
-          <li class="hotkey-item hotkey-item-expandable hotstring-entry${editingClass}" data-index="${index}" tabindex="0">
+          <li class="hotkey-item hotkey-item-expandable hotstring-entry${editingClass}" data-index="${index}" tabindex="-1">
             <div class="hotkey-item-main">
               <span class="entry-prefix">
                 <span class="hotkey-badge">${escapeHtml(hotstring.trigger)}</span>
