@@ -19,6 +19,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 ### Fixed
 
 - UI can only be interacted with mouse from now on.
+- Blocked WebView2 shortcuts and context menu.
 
 ## [1.0.0-alpha.5] - 2026-06-25
 
