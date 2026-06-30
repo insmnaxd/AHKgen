@@ -7,6 +7,7 @@
   "theme.toggle": "Toggle light/dark theme",
   "settings.distinguishSides": "Distinguish left/right keys",
   "settings.keyboardLayout": "Keyboard layout",
+  "device.mouse": "Mouse",
   "settings.language": "Language",
   "settings.title": "Settings",
   "settings.languageDescription": "Choose the application language.",

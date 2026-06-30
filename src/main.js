@@ -15,8 +15,9 @@ import { createMouseOnlyInteraction } from "./ui/mouse-only-interaction.js";
 import { createScriptWorkspace } from "./ui/script-workspace.js";
 import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
+import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKGEN_VERSION = "v1.0.0-alpha.6";
+const AHKGEN_VERSION = "v1.0.0-alpha.7";
 
 const {
   fs,
@@ -100,6 +101,8 @@ function resetEditors() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   injectVersion(document, AHKGEN_VERSION);
+  renderVisualInputPicker(document.querySelector("#keyboard"));
+  renderVisualInputPicker(document.querySelector("#keyboard-remap"));
 
   const keyboardLayoutSelects = document.querySelectorAll(
     ".keyboard-layout-select"

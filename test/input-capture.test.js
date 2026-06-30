@@ -75,6 +75,7 @@ test("keyboard codes map to AHK key names", () => {
   assert.equal(keyboardCodeToAhkKey("F12"), "F12");
   assert.equal(keyboardCodeToAhkKey("ArrowLeft"), "Left");
   assert.equal(keyboardCodeToAhkKey("PageDown"), "PgDn");
+  assert.equal(keyboardCodeToAhkKey("ContextMenu"), "AppsKey");
   assert.equal(keyboardCodeToAhkKey("NumpadAdd"), "NumpadAdd");
   assert.equal(keyboardCodeToAhkKey("Unknown"), null);
 });

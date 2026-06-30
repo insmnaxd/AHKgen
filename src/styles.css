@@ -858,21 +858,66 @@ textarea,
   border-radius: 8px;
 }
 
-.kb-row {
-  display: flex;
+.visual-input-devices {
+  display: grid;
+  grid-template-columns: minmax(680px, 1fr) 154px;
+  align-items: start;
+  gap: 14px;
+}
+
+.keyboard-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.standard-keyboard {
+  min-width: 680px;
+}
+
+.keyboard-top,
+.keyboard-body {
+  display: grid;
+  grid-template-columns: minmax(0, 15fr) minmax(0, 3fr) minmax(0, 4fr);
+  gap: 10px;
+}
+
+.keyboard-top {
+  margin-bottom: 10px;
+}
+
+.kb-grid-row,
+.keyboard-numpad {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
   gap: 4px;
+}
+
+.kb-grid-row {
+  min-height: 34px;
   margin-bottom: 4px;
 }
 
-.kb-row:last-child {
+.kb-grid-row:last-child {
   margin-bottom: 0;
 }
 
+.keyboard-numpad {
+  grid-template-rows: repeat(5, 34px);
+}
+
+.kb-grid-row > .kb-key,
+.kb-grid-row > .kb-spacer {
+  grid-column: span var(--key-span, 1);
+}
+
 .kb-key {
-  flex: 1;
   min-width: 0;
-  padding: 8px 0;
-  font-size: 0.78rem;
+  min-height: 34px;
+  padding: 2px;
+  font-size: 0.7rem;
   font-weight: 500;
   font-family: inherit;
   color: var(--text-main);
@@ -882,6 +927,14 @@ textarea,
   cursor: pointer;
   transition: background-color 0.1s, border-color 0.1s, transform 0.05s;
   text-align: center;
+}
+
+.kb-key-text {
+  font-size: 0.62rem;
+}
+
+.keyboard-system .kb-key {
+  font-size: 0.58rem;
 }
 
 .kb-key:hover {
@@ -912,12 +965,80 @@ textarea,
   font-weight: 700;
 }
 
-.kb-key-wide {
-  flex: 1.6;
+.mouse-device {
+  min-width: 0;
+  align-self: center;
 }
 
-.kb-key-space {
-  flex: 4;
+.mouse-device-title {
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mouse-shell {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, 34px);
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 54px 54px 38px 38px;
+  background-color: color-mix(in srgb, var(--key-bg) 35%, var(--input-bg));
+}
+
+.mouse-key-left {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  border-radius: 32px 5px 5px 8px;
+}
+
+.mouse-key-right {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  border-radius: 5px 32px 8px 5px;
+}
+
+.mouse-key-wheel-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.mouse-key-wheel {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 0.58rem;
+}
+
+.mouse-key-wheel-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.mouse-key-x1 {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.mouse-key-x2 {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.mouse-key-wheel-left {
+  grid-column: 1;
+  grid-row: 4;
+  border-radius: 8px 5px 5px 22px;
+}
+
+.mouse-key-wheel-right {
+  grid-column: 3;
+  grid-row: 4;
+  border-radius: 5px 8px 22px 5px;
 }
 
 .hidden {
@@ -1269,4 +1390,25 @@ input#action-value {
 .mode-tab.active .tab-badge {
   background-color: var(--accent);
   color: #ffffff;
+}
+
+@media (max-width: 1050px) {
+  .visual-input-devices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mouse-device {
+    width: 154px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .keyboard {
+    padding: 10px;
+  }
+
+  .standard-keyboard {
+    min-width: 650px;
+  }
 }

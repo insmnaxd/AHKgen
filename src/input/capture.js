@@ -29,6 +29,7 @@ const KEY_CODES = {
   PrintScreen: "PrintScreen",
   ScrollLock: "ScrollLock",
   Pause: "Pause",
+  ContextMenu: "AppsKey",
   NumLock: "NumLock",
   Backquote: "`",
   Minus: "-",

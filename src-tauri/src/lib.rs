@@ -91,6 +91,7 @@ mod windows_key_capture {
             0x2E => Some("Delete"),
             0x5B => Some("MetaLeft"),
             0x5C => Some("MetaRight"),
+            0x5D => Some("ContextMenu"),
             0x6A => Some("NumpadMultiply"),
             0x6B => Some("NumpadAdd"),
             0x6D => Some("NumpadSubtract"),
@@ -345,7 +346,7 @@ pub fn run() {
 
                     // 40% width, 75% height of the screen the window opens on.
                     // Adjust these two factors if you want a different starting size.
-                    let width_factor = 0.40;
+                    let width_factor = 0.60;
                     let height_factor = 0.75;
 
                     let new_width = (screen_size.width as f64 * width_factor) as u32;

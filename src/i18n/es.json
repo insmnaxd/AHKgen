@@ -7,6 +7,7 @@
   "theme.toggle": "Cambiar entre tema claro y oscuro",
   "settings.distinguishSides": "Distinguir teclas izquierdas y derechas",
   "settings.keyboardLayout": "Distribución del teclado",
+  "device.mouse": "Ratón",
   "settings.language": "Idioma",
   "settings.title": "Configuración",
   "settings.languageDescription": "Elige el idioma de la aplicación.",

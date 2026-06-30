@@ -53,6 +53,13 @@ test(
           sendMode: "Input",
           comment: "Run a command",
         },
+        {
+          prefix: "XButton1",
+          actionType: "send",
+          actionValue: "Mouse hotkey",
+          sendMode: "Input",
+          comment: "Mouse button hotkey",
+        },
       ],
       hotstrings: [
         {
@@ -88,6 +95,21 @@ test(
           fromPrefix: "CapsLock",
           toPrefix: "Escape",
           comment: "CapsLock as Escape",
+        },
+        {
+          fromPrefix: "AppsKey",
+          toPrefix: "NumpadEnter",
+          comment: "Menu key to numpad Enter",
+        },
+        {
+          fromPrefix: "XButton2",
+          toPrefix: "MButton",
+          comment: "Mouse side button to middle button",
+        },
+        {
+          fromPrefix: "WheelLeft",
+          toPrefix: "WheelRight",
+          comment: "Horizontal wheel remap",
         },
       ],
     });

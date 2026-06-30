@@ -4,6 +4,17 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-alpha.7] - 2026-06-30
+
+### Added
+
+- Mouse scheme.
+
+### Changed
+
+- Improved rendering of keyboard scheme in `Hotkeys` and `Remapping`.
+- Expanded keyboard scheme to resemble a full-sized keyboard.
+
 ## [1.0.0-alpha.6] - 2026-06-26
 
 ### Added
