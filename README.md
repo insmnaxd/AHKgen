@@ -34,3 +34,9 @@ Download the latest release from the [GitHub Releases](https://github.com/insmna
 - **Frontend**: HTML, CSS, JavaScript (Tauri)
 - **Backend**: Rust
 - **Renderer**: WebView2 (Windows)
+
+---
+
+## 📄 License
+
+AHKgen is licensed under the [MIT License](./LICENSE).
