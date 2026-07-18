@@ -11,6 +11,7 @@ import { createRemapsController } from "./remaps/controller.js";
 import { createEntryListUi } from "./ui/entry-list.js";
 import { createAhkVersionController } from "./ui/ahk-version.js";
 import { escapeHtml } from "./ui/html.js";
+import { createLanguagePicker } from "./ui/language-picker.js";
 import { createModesController } from "./ui/modes.js";
 import { createMouseOnlyInteraction } from "./ui/mouse-only-interaction.js";
 import { createScriptWorkspace } from "./ui/script-workspace.js";
@@ -18,7 +19,7 @@ import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKGEN_VERSION = "v1.0.0-alpha.9";
+const AHKGEN_VERSION = "v1.0.0-beta.0";
 
 const {
   fs,
@@ -51,10 +52,12 @@ let remapsController;
 let titlebarController;
 let scriptWorkspace;
 let ahkVersionController;
+let languagePickerController;
 
 function applyTranslations(languageSelect) {
   i18n.applyToDocument(document);
   languageSelect.value = i18n.getLanguage();
+  languagePickerController?.sync();
   hotkeysController.updateTranslations();
   hotstringsController.updateLabels();
   remapsController.updateLabels();
@@ -113,6 +116,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     ".distinguish-sides-toggle"
   );
   const languageSelect = document.querySelector("#language-select");
+  languagePickerController = createLanguagePicker({
+    documentLike: document,
+    select: languageSelect,
+  });
   const resetConfigButton = document.querySelector("#reset-config-btn");
   const settingsStatus = document.querySelector("#settings-status");
   const badges = {
@@ -308,6 +315,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   modesController.init();
   scriptWorkspace.init();
   ahkVersionController.init();
+  languagePickerController.init();
   themeController.init();
   titlebarController.init();
   inputCapture.init();

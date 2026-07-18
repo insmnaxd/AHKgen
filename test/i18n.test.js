@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -6,6 +7,7 @@ import {
   detectSystemLanguage,
   interpolate,
   resolveSupportedLanguage,
+  SUPPORTED_LANGUAGES,
 } from "../src/i18n/index.js";
 
 test("language resolution accepts exact and regional locales", () => {
@@ -64,4 +66,32 @@ test("i18n loads dictionaries and falls back to English", async () => {
   assert.equal(i18n.t("greeting", { name: "Ada" }), "Cześć Ada");
   assert.equal(i18n.t("fallback"), "English fallback");
   assert.equal(i18n.t("missing.key"), "missing.key");
+});
+
+test("translation files have matching keys, placeholders, and non-empty values", async () => {
+  const dictionaries = {};
+
+  for (const language of SUPPORTED_LANGUAGES) {
+    const fileUrl = new URL(`../src/i18n/${language}.json`, import.meta.url);
+    dictionaries[language] = JSON.parse(await readFile(fileUrl, "utf8"));
+  }
+
+  const englishKeys = Object.keys(dictionaries.en).sort();
+  const placeholders = (value) =>
+    [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+
+  for (const language of SUPPORTED_LANGUAGES) {
+    const dictionary = dictionaries[language];
+    assert.deepEqual(Object.keys(dictionary).sort(), englishKeys, `${language}: key mismatch`);
+
+    for (const key of englishKeys) {
+      assert.equal(typeof dictionary[key], "string", `${language}.${key}: not a string`);
+      assert.notEqual(dictionary[key].trim(), "", `${language}.${key}: empty translation`);
+      assert.deepEqual(
+        placeholders(dictionary[key]),
+        placeholders(dictionaries.en[key]),
+        `${language}.${key}: placeholder mismatch`
+      );
+    }
+  }
 });

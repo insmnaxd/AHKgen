@@ -6,7 +6,6 @@ See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 
 ## [1.0.0-beta]
 
-- Verification and cleanup of all language files.
 - Visual tests and UI/UX improvements.
 - Resolution and DPI tests.
 - More GUI animations.

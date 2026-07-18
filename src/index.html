@@ -73,18 +73,34 @@
             <div class="settings-list">
               <div class="settings-item">
                 <div>
-                  <label for="language-select" class="settings-item-title" data-i18n="settings.language">Language</label>
+                  <label for="language-picker-button" class="settings-item-title" data-i18n="settings.language">Language</label>
                   <p class="settings-item-description" data-i18n="settings.languageDescription">Choose the application language.</p>
                 </div>
-                <select id="language-select" class="settings-select">
-                  <option value="en" data-i18n="language.en">English</option>
-                  <option value="pl" data-i18n="language.pl">Polski</option>
-                  <option value="es" data-i18n="language.es">Español</option>
-                  <option value="de" data-i18n="language.de">Deutsch</option>
-                  <option value="fr" data-i18n="language.fr">Français</option>
-                  <option value="it" data-i18n="language.it">Italiano</option>
-                  <option value="pt" data-i18n="language.pt">Português</option>
-                </select>
+                <div class="language-picker" id="language-picker">
+                  <button type="button" id="language-picker-button" class="settings-select language-picker-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-picker-options">
+                    <img class="language-flag" id="language-picker-current-flag" src="assets/flags/en.svg" alt="" />
+                    <span id="language-picker-current-label">English</span>
+                    <span class="language-picker-chevron" aria-hidden="true">▾</span>
+                  </button>
+                  <div class="language-picker-options" id="language-picker-options" role="listbox" hidden>
+                    <div class="language-picker-option" id="language-option-en" role="option" data-language="en" aria-selected="true" tabindex="-1"><img class="language-flag" src="assets/flags/en.svg" alt="" /><span data-i18n="language.en">English</span></div>
+                    <div class="language-picker-option" id="language-option-pl" role="option" data-language="pl" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/pl.svg" alt="" /><span data-i18n="language.pl">Polski</span></div>
+                    <div class="language-picker-option" id="language-option-es" role="option" data-language="es" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/es.svg" alt="" /><span data-i18n="language.es">Español</span></div>
+                    <div class="language-picker-option" id="language-option-de" role="option" data-language="de" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/de.svg" alt="" /><span data-i18n="language.de">Deutsch</span></div>
+                    <div class="language-picker-option" id="language-option-fr" role="option" data-language="fr" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/fr.svg" alt="" /><span data-i18n="language.fr">Français</span></div>
+                    <div class="language-picker-option" id="language-option-it" role="option" data-language="it" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/it.svg" alt="" /><span data-i18n="language.it">Italiano</span></div>
+                    <div class="language-picker-option" id="language-option-pt" role="option" data-language="pt" aria-selected="false" tabindex="-1"><img class="language-flag" src="assets/flags/pt.svg" alt="" /><span data-i18n="language.pt">Português</span></div>
+                  </div>
+                  <select id="language-select" hidden tabindex="-1" aria-hidden="true">
+                    <option value="en">English</option>
+                    <option value="pl">Polski</option>
+                    <option value="es">Español</option>
+                    <option value="de">Deutsch</option>
+                    <option value="fr">Français</option>
+                    <option value="it">Italiano</option>
+                    <option value="pt">Português</option>
+                  </select>
+                </div>
               </div>
               <div class="settings-item settings-item-danger">
                 <div>

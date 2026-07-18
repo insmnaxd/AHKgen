@@ -126,7 +126,6 @@
   "error.duplicateRemap": "A remap for \"{prefix}\" already exists.",
   "error.hotstringMissingTrigger": "Please enter a trigger.",
   "error.hotstringTriggerSpaces": "The trigger cannot contain spaces.",
-  "error.hotstringTriggerColon": "The trigger cannot contain \":\".",
   "error.hotstringMissingReplacement": "Please enter a replacement.",
   "error.duplicateHotstring": "A hotstring for \"{trigger}\" already exists.",
   "status.copied": "Copied to clipboard.",

@@ -4,6 +4,15 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-beta.0] - 2026-07-19
+
+### Added
+
+- Country flags next to languages in Settings.
+
+### Changed
+
+- Reviewed and corrected all translations.
 
 ## [1.0.0-alpha.9] - 2026-07-18
 

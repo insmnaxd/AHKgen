@@ -126,7 +126,6 @@
   "error.duplicateRemap": "Une réaffectation existe déjà pour \"{prefix}\".",
   "error.hotstringMissingTrigger": "Saisissez un déclencheur.",
   "error.hotstringTriggerSpaces": "Le déclencheur ne peut pas contenir d’espaces.",
-  "error.hotstringTriggerColon": "Le déclencheur ne peut pas contenir de deux-points.",
   "error.hotstringMissingReplacement": "Saisissez un remplacement.",
   "error.duplicateHotstring": "Un hotstring existe déjà pour \"{trigger}\".",
   "status.copied": "Copié dans le presse-papiers.",

@@ -1268,7 +1268,7 @@ textarea,
 }
 
 .settings-select {
-  width: 100px;
+  width: 120px;
   padding: 6px 9px;
   border-radius: 6px;
   border: 1px solid var(--panel-border);
@@ -1278,6 +1278,70 @@ textarea,
   font-size: 0.85rem;
   outline: none;
   cursor: pointer;
+}
+
+.language-picker {
+  position: relative;
+}
+
+.language-picker-button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  text-align: left;
+}
+
+.language-flag {
+  display: block;
+  width: 19px;
+  height: 12px;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.language-picker-chevron {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.language-picker-options {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  right: 0;
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+  background-color: var(--panel-bg);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+
+.language-picker-option {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 7px 6px;
+  border-radius: 5px;
+  color: var(--text-main);
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.language-picker-option:hover,
+.language-picker-option:focus-visible {
+  background-color: var(--key-hover-bg);
+}
+
+.language-picker-option[aria-selected="true"] {
+  color: var(--text-heading);
+  background-color: var(--editing-bg);
 }
 
 .settings-item .btn {
@@ -1408,6 +1472,7 @@ textarea,
   }
 
   .settings-select,
+  .language-picker,
   .settings-item .btn {
     width: 100%;
   }

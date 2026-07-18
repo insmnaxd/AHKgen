@@ -126,7 +126,6 @@
   "error.duplicateRemap": "Já existe um remapeamento para \"{prefix}\".",
   "error.hotstringMissingTrigger": "Introduza um acionador.",
   "error.hotstringTriggerSpaces": "O acionador não pode conter espaços.",
-  "error.hotstringTriggerColon": "O acionador não pode conter \":\".",
   "error.hotstringMissingReplacement": "Introduza uma substituição.",
   "error.duplicateHotstring": "Já existe um hotstring para \"{trigger}\".",
   "status.copied": "Copiado para a área de transferência.",
