@@ -7,10 +7,9 @@ See [CHANGELOG.md](./CHANGELOG.md) for released changes.
 ## [1.0.0-beta]
 
 - Verification and cleanup of all language files.
-- ARIA implementation.
 - Visual tests and UI/UX improvements.
 - Resolution and DPI tests.
-- Content Security Policy.
+- More GUI animations.
 
 ## Post-1.0
 

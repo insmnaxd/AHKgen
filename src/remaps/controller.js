@@ -234,19 +234,21 @@ export function createRemapsController({
           : "";
 
         return `
-          <li class="hotkey-item hotkey-item-expandable remap-entry${editingClass}" data-index="${index}" tabindex="-1">
-            <div class="hotkey-item-main">
+          <li class="hotkey-item hotkey-item-expandable remap-entry${editingClass}" data-index="${index}">
+            <button type="button" class="hotkey-item-main entry-edit-button" aria-label="${escapeHtml(
+              `${t("button.edit")}: ${remap.fromPrefix} → ${remap.toPrefix}`
+            )}">
               <span class="entry-prefix">
                 <span class="hotkey-badge">${escapeHtml(remap.fromPrefix)}</span>
                 <span class="remap-arrow-inline">&rarr;</span>
                 <span class="hotkey-badge">${escapeHtml(remap.toPrefix)}</span>
               </span>
               ${entryName}
-            </div>
+            </button>
             <div class="hotkey-item-actions">
-              <button class="btn-remove-remap" data-index="${index}" title="${escapeHtml(
+              <button type="button" class="btn-remove-remap" data-index="${index}" title="${escapeHtml(
                 t("button.remove")
-              )}">&times;</button>
+              )}" aria-label="${escapeHtml(t("button.remove"))}">&times;</button>
             </div>
           </li>
         `;

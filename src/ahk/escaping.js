@@ -1,9 +1,5 @@
-// Backticks must be escaped first so the ones added for literal percent signs
-// are not escaped a second time.
-export function escapeForSend(text) {
+function escapeSendKeys(text) {
   return text
-    .replace(/`/g, "``")
-    .replace(/%/g, "`%")
     .replace(/[{}]/g, (char) => (char === "{" ? "{{}" : "{}}"))
     .replace(/\^/g, "{^}")
     .replace(/!/g, "{!}")
@@ -14,7 +10,7 @@ export function escapeForSend(text) {
     .replace(/\r\n|\r|\n/g, "+{Enter}");
 }
 
-export function unescapeFromSend(text) {
+function unescapeSendKeys(text) {
   return text
     .replace(/\+\{Enter\}/g, "\n")
     // Decode generated whitespace tokens before literal braces. This prevents
@@ -26,11 +22,29 @@ export function unescapeFromSend(text) {
     .replace(/\{\^\}/g, "^")
     .replace(/\{!\}/g, "!")
     .replace(/\{\+\}/g, "+")
-    .replace(/\{#\}/g, "#")
+    .replace(/\{#\}/g, "#");
+}
+
+// Backticks must be escaped first so the ones added for literal percent signs
+// are not escaped a second time.
+export function escapeForSend(text) {
+  return escapeSendKeys(text.replace(/`/g, "``").replace(/%/g, "`%"));
+}
+
+export function unescapeFromSend(text) {
+  return unescapeSendKeys(text)
     // Decode escaped percent signs before doubled backticks. Otherwise a
     // literal backtick immediately followed by "%" would lose its backtick.
     .replace(/`%/g, "%")
     .replace(/``/g, "`");
+}
+
+export function escapeForV2Send(text) {
+  return escapeForV2ExpressionString(escapeSendKeys(text));
+}
+
+export function unescapeFromV2Send(text) {
+  return unescapeSendKeys(unescapeFromExpressionString(text));
 }
 
 // AHK v1 uses doubled quotes inside a quoted Run target. Percent signs start
@@ -59,6 +73,14 @@ export function escapeForExpressionString(text) {
   return text
     .replace(/`/g, "``")
     .replace(/"/g, '""')
+    .replace(/\r\n|\r|\n/g, "`n")
+    .replace(/\t/g, "`t");
+}
+
+export function escapeForV2ExpressionString(text) {
+  return text
+    .replace(/`/g, "``")
+    .replace(/"/g, '`"')
     .replace(/\r\n|\r|\n/g, "`n")
     .replace(/\t/g, "`t");
 }

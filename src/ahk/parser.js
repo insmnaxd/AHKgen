@@ -3,8 +3,10 @@ import {
   unescapeFromExpressionString,
   unescapeFromRun,
   unescapeFromSend,
+  unescapeFromV2Send,
   unescapeHotstringTrigger,
 } from "./escaping.js";
+import { AHK_VERSION_V2 } from "./versions.js";
 
 const SUPPORTED_HOTSTRING_OPTIONS = /^[*C?R]*$/i;
 const SUPPORTED_SEND_MODES = {
@@ -22,7 +24,7 @@ export function normalizeSupportedSendMode(sendMode) {
 
 export function parseHotstringFunction(line) {
   const match = line.match(
-    /^Hotstring\("((?:""|[^"])*)", "((?:""|[^"])*)"\)$/
+    /^Hotstring\("((?:`.|""|[^"])*)", "((?:`.|""|[^"])*)"\)$/
   );
   if (!match) return null;
 
@@ -73,8 +75,40 @@ export function parseHotstringDefinition(line) {
   return null;
 }
 
-export function parseActionLine(line) {
+export function parseActionLine(line, ahkVersion = "v1") {
   const commandLine = line.trimStart();
+
+  if (ahkVersion === AHK_VERSION_V2) {
+    const sendMatch = commandLine.trimEnd().match(
+      /^(Send|SendInput|SendEvent)\("((?:`.|""|[^"])*)"\)$/i
+    );
+    if (sendMatch) {
+      return {
+        actionType: "send",
+        actionValue: unescapeFromV2Send(sendMatch[2]),
+        sendMode: sendMatch[1].toLowerCase() === "sendevent" ? "Event" : "Input",
+      };
+    }
+
+    const runMatch = commandLine.trimEnd().match(/^Run\("((?:`.|""|[^"])*)"\)$/i);
+    if (runMatch) {
+      const actionValue = unescapeFromExpressionString(runMatch[1]);
+      return {
+        actionType: /^https?:\/\//i.test(actionValue) ? "url" : "run",
+        actionValue,
+      };
+    }
+
+    const commandMatch = commandLine.trimEnd().match(/^Run\s+"((?:`.|""|[^"])*)"$/i);
+    if (commandMatch) {
+      return {
+        actionType: "command",
+        actionValue: unescapeFromExpressionString(commandMatch[1]),
+      };
+    }
+
+    return null;
+  }
 
   // Consume at most one separator space after the comma. Any additional
   // whitespace belongs to the text being sent.
@@ -114,6 +148,12 @@ export function parseAhkScript(rawText) {
     };
   }
 
+  const ahkVersion = lines
+    .slice(0, 8)
+    .some((line) => /^(?:;\s*AutoHotkey\s+v2|#Requires\s+AutoHotkey\s+v2)/i.test(line.trim()))
+    ? AHK_VERSION_V2
+    : "v1";
+
   const hotkeys = [];
   const remaps = [];
   const hotstrings = [];
@@ -126,6 +166,7 @@ export function parseAhkScript(rawText) {
       previous.startsWith(";") &&
       !previous.startsWith(AHKGEN_SIGNATURE_PREFIX) &&
       previous !== "; AutoHotkey v1" &&
+      previous !== "; AutoHotkey v2" &&
       previous !== "; --- Hotkeys ---" &&
       previous !== "; --- Hotstrings ---" &&
       previous !== "; --- Key remaps ---"
@@ -170,6 +211,28 @@ export function parseAhkScript(rawText) {
     if (hotkeyMatch) {
       const prefix = hotkeyMatch[1];
       let cursor = i + 1;
+
+      if (ahkVersion === AHK_VERSION_V2) {
+        const openingBrace = (lines[cursor] || "").trim();
+        const parsedAction = parseActionLine(lines[cursor + 1] || "", ahkVersion);
+        const closingBrace = (lines[cursor + 2] || "").trim();
+        if (openingBrace === "{" && parsedAction && closingBrace === "}") {
+          hotkeys.push({
+            prefix,
+            actionType: parsedAction.actionType,
+            actionValue: parsedAction.actionValue,
+            sendMode: parsedAction.actionType === "send" ? parsedAction.sendMode : "Input",
+            comment: getPrecedingComment(i),
+          });
+          i = cursor + 3;
+          continue;
+        }
+
+        skippedCount += 1;
+        i += 1;
+        continue;
+      }
+
       let sendMode = "Input";
       const sendModeMatch = (lines[cursor] || "").trim().match(/^SendMode,\s*(\w+)$/i);
       if (sendModeMatch) {
@@ -215,5 +278,5 @@ export function parseAhkScript(rawText) {
     i += 1;
   }
 
-  return { success: true, hotkeys, remaps, hotstrings, skippedCount };
+  return { success: true, ahkVersion, hotkeys, remaps, hotstrings, skippedCount };
 }

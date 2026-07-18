@@ -8,37 +8,7 @@ const FOCUSABLE_SELECTOR = [
   "[tabindex]",
 ].join(", ");
 
-const NON_TEXT_CONTROL_SELECTOR = [
-  "button",
-  "select",
-  "input[type='checkbox']",
-  "input[type='radio']",
-  "input[type='button']",
-  "input[type='submit']",
-  "input[type='reset']",
-  "[role='button']",
-  "[role='tab']",
-  "[role='option']",
-].join(", ");
-
-export function isTextEntryElement(element) {
-  if (!element?.matches) return false;
-  if (element.matches("textarea, [contenteditable='true']")) return true;
-  if (!element.matches("input")) return false;
-
-  return ![
-    "button",
-    "checkbox",
-    "color",
-    "file",
-    "hidden",
-    "image",
-    "radio",
-    "range",
-    "reset",
-    "submit",
-  ].includes(element.type);
-}
+const MOUSE_ONLY_SELECTOR = "[data-mouse-only]";
 
 export function shouldBlockKeyboardEvent(event) {
   if (
@@ -48,9 +18,10 @@ export function shouldBlockKeyboardEvent(event) {
   ) {
     return true;
   }
-  if (event.key === "Tab") return true;
-  if (isTextEntryElement(event.target)) return false;
-  return Boolean(event.target?.closest?.(NON_TEXT_CONTROL_SELECTOR));
+  // Mouse-only controls are skipped while tabbing, but Tab must still be able
+  // to leave one after it received focus from a mouse click.
+  if (event.key === "Tab") return false;
+  return Boolean(event.target?.closest?.(MOUSE_ONLY_SELECTOR));
 }
 
 export function createMouseOnlyInteraction({
@@ -58,11 +29,16 @@ export function createMouseOnlyInteraction({
   MutationObserverClass,
 }) {
   function removeFromTabOrder(root) {
-    if (root.matches?.(FOCUSABLE_SELECTOR)) {
+    if (
+      root.matches?.(FOCUSABLE_SELECTOR) &&
+      root.closest?.(MOUSE_ONLY_SELECTOR)
+    ) {
       root.setAttribute("tabindex", "-1");
     }
     root.querySelectorAll?.(FOCUSABLE_SELECTOR).forEach((element) => {
-      element.setAttribute("tabindex", "-1");
+      if (element.closest?.(MOUSE_ONLY_SELECTOR)) {
+        element.setAttribute("tabindex", "-1");
+      }
     });
   }
 

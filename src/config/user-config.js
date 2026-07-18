@@ -2,6 +2,7 @@ export const DEFAULT_USER_CONFIG = {
   language: null,
   theme: null,
   keyboardLayout: null,
+  ahkVersion: "v2",
 };
 
 export const LEGACY_STORAGE_KEYS = {
@@ -15,6 +16,7 @@ export function normalizeUserConfig(config, { resolveLanguage, isKeyboardLayout 
     language: resolveLanguage(config?.language) || null,
     theme: config?.theme === "light" || config?.theme === "dark" ? config.theme : null,
     keyboardLayout: isKeyboardLayout(config?.keyboardLayout) ? config.keyboardLayout : null,
+    ahkVersion: config?.ahkVersion === "v1" ? "v1" : "v2",
   };
 }
 

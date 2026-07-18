@@ -54,5 +54,7 @@ test("visual input renderer keeps the controller data contract", () => {
   assert.match(html, /data-side="L" data-base="Ctrl"/);
   assert.match(html, /data-key="NumpadAdd"/);
   assert.match(html, /data-key="WheelRight"/);
+  assert.match(html, /type="button" tabindex="-1" class="kb-key/);
   assert.match(html, /data-i18n="device\.mouse"/);
+  assert.match(html, /data-i18n-aria-label="device\.mouse"/);
 });

@@ -56,8 +56,7 @@ export function createEntryListUi({
         expand(item, false);
       }
 
-      item.addEventListener("click", (event) => {
-        if (event.target.closest("button")) return;
+      item.querySelector(".entry-edit-button")?.addEventListener("click", () => {
         handleEdit(Number.parseInt(item.dataset.index, 10));
       });
       item.addEventListener("mouseenter", () => {

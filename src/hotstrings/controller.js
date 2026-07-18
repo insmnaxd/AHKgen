@@ -4,6 +4,7 @@ import {
   validateHotstringEntry,
 } from "./model.js";
 import { removeEntryByReference } from "../ui/entries.js";
+import { createAutoResizeTextarea } from "../ui/auto-resize-textarea.js";
 
 export function createHotstringsController({
   documentLike,
@@ -29,6 +30,7 @@ export function createHotstringsController({
     list: documentLike.querySelector("#hotstring-list"),
     count: documentLike.querySelector("#hotstring-count"),
   };
+  const replacementAutoResize = createAutoResizeTextarea(elements.replacement);
 
   let editingIndex = null;
 
@@ -47,6 +49,7 @@ export function createHotstringsController({
   function resetForm() {
     elements.trigger.value = "";
     elements.replacement.value = "";
+    replacementAutoResize.resize();
     elements.autoReplace.checked = false;
     elements.caseSensitive.checked = false;
     elements.insideWord.checked = false;
@@ -73,6 +76,7 @@ export function createHotstringsController({
 
     elements.trigger.value = hotstring.trigger;
     elements.replacement.value = hotstring.replacement;
+    replacementAutoResize.resize();
     elements.autoReplace.checked = hotstring.autoReplace;
     elements.caseSensitive.checked = hotstring.caseSensitive;
     elements.insideWord.checked = hotstring.insideWord;
@@ -122,18 +126,20 @@ export function createHotstringsController({
             )}</strong>${optionsLabel}</span>`;
 
         return `
-          <li class="hotkey-item hotkey-item-expandable hotstring-entry${editingClass}" data-index="${index}" tabindex="-1">
-            <div class="hotkey-item-main">
+          <li class="hotkey-item hotkey-item-expandable hotstring-entry${editingClass}" data-index="${index}">
+            <button type="button" class="hotkey-item-main entry-edit-button" aria-label="${escapeHtml(
+              `${t("button.edit")}: ${hotstring.trigger}`
+            )}">
               <span class="entry-prefix">
                 <span class="hotkey-badge">${escapeHtml(hotstring.trigger)}</span>
                 ${hotstring.comment ? "" : '<span class="remap-arrow-inline">&rarr;</span>'}
               </span>
               ${description}
-            </div>
+            </button>
             <div class="hotkey-item-actions">
-              <button class="btn-remove-hotstring" data-index="${index}" title="${escapeHtml(
+              <button type="button" class="btn-remove-hotstring" data-index="${index}" title="${escapeHtml(
                 t("button.remove")
-              )}">&times;</button>
+              )}" aria-label="${escapeHtml(t("button.remove"))}">&times;</button>
             </div>
           </li>
         `;
@@ -198,6 +204,7 @@ export function createHotstringsController({
   function init() {
     elements.addButton.addEventListener("click", addOrSave);
     elements.cancelButton.addEventListener("click", cancelEdit);
+    replacementAutoResize.init();
     updateLabels();
   }
 

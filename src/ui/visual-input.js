@@ -13,6 +13,7 @@ function renderKey(definition) {
 
   const attributes = [
     'type="button"',
+    'tabindex="-1"',
     `class="${classes.join(" ")}"`,
     `data-key="${escapeHtml(definition.key)}"`,
   ];
@@ -88,7 +89,7 @@ export function buildVisualInputHtml() {
           </div>
         </div>
       </div>
-      <section class="mouse-device" aria-label="Mouse">
+      <section class="mouse-device" aria-label="Mouse" data-i18n-aria-label="device.mouse">
         <div class="mouse-device-title" data-i18n="device.mouse">Mouse</div>
         <div class="mouse-shell">${mouseKeys}</div>
       </section>

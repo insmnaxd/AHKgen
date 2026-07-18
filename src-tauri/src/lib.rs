@@ -4,6 +4,27 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
+const TARGET_WINDOW_WIDTH: f64 = 1200.0;
+const TARGET_WINDOW_HEIGHT: f64 = 820.0;
+const MAX_MONITOR_FRACTION: f64 = 0.90;
+
+fn initial_window_size(monitor_width: u32, monitor_height: u32, scale_factor: f64) -> (f64, f64) {
+    let safe_scale_factor = if scale_factor.is_finite() && scale_factor > 0.0 {
+        scale_factor
+    } else {
+        1.0
+    };
+    let logical_monitor_width = monitor_width as f64 / safe_scale_factor;
+    let logical_monitor_height = monitor_height as f64 / safe_scale_factor;
+    let maximum_width = (logical_monitor_width * MAX_MONITOR_FRACTION).floor();
+    let maximum_height = (logical_monitor_height * MAX_MONITOR_FRACTION).floor();
+
+    (
+        TARGET_WINDOW_WIDTH.min(maximum_width),
+        TARGET_WINDOW_HEIGHT.min(maximum_height),
+    )
+}
+
 #[cfg(target_os = "windows")]
 mod windows_key_capture {
     use serde::Serialize;
@@ -248,6 +269,7 @@ struct UserConfig {
     language: Option<String>,
     theme: Option<String>,
     keyboard_layout: Option<String>,
+    ahk_version: Option<String>,
 }
 
 fn user_config_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -343,19 +365,14 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 if let Ok(Some(monitor)) = window.current_monitor() {
                     let screen_size = monitor.size();
+                    let (width, height) = initial_window_size(
+                        screen_size.width,
+                        screen_size.height,
+                        monitor.scale_factor(),
+                    );
 
-                    // 60% width, 76% height of the screen the window opens on.
-                    // Adjust these two factors if you want a different starting size.
-                    let width_factor = 0.60;
-                    let height_factor = 0.76;
-
-                    let new_width = (screen_size.width as f64 * width_factor) as u32;
-                    let new_height = (screen_size.height as f64 * height_factor) as u32;
-
-                    let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
-                        width: new_width,
-                        height: new_height,
-                    }));
+                    let _ =
+                        window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
 
                     // Re-center the window now that its size changed, so it doesn't end up
                     // anchored to a corner based on the size defined in tauri.conf.json.
@@ -367,4 +384,29 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::initial_window_size;
+
+    #[test]
+    fn keeps_the_target_logical_size_at_1080p_and_100_percent() {
+        assert_eq!(initial_window_size(1920, 1080, 1.0), (1200.0, 820.0));
+    }
+
+    #[test]
+    fn clamps_the_height_at_1080p_and_125_percent() {
+        assert_eq!(initial_window_size(1920, 1080, 1.25), (1200.0, 777.0));
+    }
+
+    #[test]
+    fn uses_ninety_percent_of_1080p_at_150_percent() {
+        assert_eq!(initial_window_size(1920, 1080, 1.5), (1152.0, 648.0));
+    }
+
+    #[test]
+    fn falls_back_to_a_safe_scale_factor() {
+        assert_eq!(initial_window_size(1920, 1080, 0.0), (1200.0, 820.0));
+    }
 }

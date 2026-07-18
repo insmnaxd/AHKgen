@@ -38,6 +38,7 @@ test("config normalization rejects unsupported values", () => {
       language: "pl",
       theme: null,
       keyboardLayout: null,
+      ahkVersion: "v2",
     }
   );
 });
@@ -54,6 +55,7 @@ test("legacy preferences only fill missing config fields", () => {
         language: "en",
         theme: "dark",
         keyboardLayout: "azerty",
+        ahkVersion: "v2",
       },
       changed: true,
     }
@@ -72,7 +74,7 @@ test("config store loads, migrates and persists legacy preferences", async () =>
     invoke: async (command, payload) => {
       calls.push({ command, payload });
       if (command === "load_user_config") {
-        return { language: null, theme: null, keyboardLayout: null };
+        return { language: null, theme: null, keyboardLayout: null, ahkVersion: null };
       }
     },
     storage: {
@@ -86,6 +88,7 @@ test("config store loads, migrates and persists legacy preferences", async () =>
     language: "pl",
     theme: "dark",
     keyboardLayout: "qwertz",
+    ahkVersion: "v2",
   });
   assert.deepEqual(calls.at(-1), {
     command: "save_user_config",
@@ -94,9 +97,21 @@ test("config store loads, migrates and persists legacy preferences", async () =>
         language: "pl",
         theme: "dark",
         keyboardLayout: "qwertz",
+        ahkVersion: "v2",
       },
     },
   });
+});
+
+test("config stores only supported AutoHotkey versions", () => {
+  assert.equal(
+    normalizeUserConfig({ ahkVersion: "v2" }, dependencies).ahkVersion,
+    "v2"
+  );
+  assert.equal(
+    normalizeUserConfig({ ahkVersion: "v3" }, dependencies).ahkVersion,
+    "v2"
+  );
 });
 
 test("config store serializes rapid saves in update order", async () => {

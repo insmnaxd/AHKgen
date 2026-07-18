@@ -9,6 +9,7 @@ import {
 } from "./keyboard/layouts.js";
 import { createRemapsController } from "./remaps/controller.js";
 import { createEntryListUi } from "./ui/entry-list.js";
+import { createAhkVersionController } from "./ui/ahk-version.js";
 import { escapeHtml } from "./ui/html.js";
 import { createModesController } from "./ui/modes.js";
 import { createMouseOnlyInteraction } from "./ui/mouse-only-interaction.js";
@@ -17,7 +18,7 @@ import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKGEN_VERSION = "v1.0.0-alpha.8";
+const AHKGEN_VERSION = "v1.0.0-alpha.9";
 
 const {
   fs,
@@ -49,6 +50,7 @@ let hotstringsController;
 let remapsController;
 let titlebarController;
 let scriptWorkspace;
+let ahkVersionController;
 
 function applyTranslations(languageSelect) {
   i18n.applyToDocument(document);
@@ -148,6 +150,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     refreshOutput();
   };
 
+  ahkVersionController = createAhkVersionController({
+    toggle: document.querySelector("#ahk-version-toggle"),
+    getSavedVersion: () => userConfigStore.get().ahkVersion,
+    saveVersion: (ahkVersion) => userConfigStore.update({ ahkVersion }),
+    onChange: () => scriptWorkspace.render(),
+  });
+
   scriptWorkspace = createScriptWorkspace({
     documentLike: document,
     version: AHKGEN_VERSION,
@@ -157,6 +166,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     fileSystem: fs,
     dialogs: dialog,
     onEntriesChanged: renderAll,
+    getAhkVersion: () => ahkVersionController.getVersion(),
+    onAhkVersionDetected: (ahkVersion) =>
+      ahkVersionController.apply(ahkVersion, { persist: true }),
   });
   hotkeysController = createHotkeysController({
     documentLike: document,
@@ -295,6 +307,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   remapsController.init();
   modesController.init();
   scriptWorkspace.init();
+  ahkVersionController.init();
   themeController.init();
   titlebarController.init();
   inputCapture.init();

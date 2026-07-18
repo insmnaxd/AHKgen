@@ -15,25 +15,31 @@ export function createScriptWorkspace({
   fileSystem,
   dialogs,
   onEntriesChanged,
+  getAhkVersion = () => "v1",
+  onAhkVersionDetected = () => {},
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
 }) {
   const preview = documentLike.querySelector("#script-preview");
   const status = documentLike.querySelector("#action-status");
   let statusTimeoutId = null;
-  let cleanScript = null;
+  let cleanEntries = null;
+
+  function getEntriesSnapshot() {
+    return JSON.stringify(entries);
+  }
 
   function render() {
-    preview.value = buildFullScript({ version, ...entries });
-    if (cleanScript === null) cleanScript = preview.value;
+    preview.value = buildFullScript({ version, ahkVersion: getAhkVersion(), ...entries });
+    if (cleanEntries === null) cleanEntries = getEntriesSnapshot();
   }
 
   function markClean() {
-    cleanScript = preview.value;
+    cleanEntries = getEntriesSnapshot();
   }
 
   function hasUnsavedChanges() {
-    return cleanScript !== null && preview.value !== cleanScript;
+    return cleanEntries !== null && getEntriesSnapshot() !== cleanEntries;
   }
 
   function setStatus(message, isError = false, autoClear = true) {
@@ -108,6 +114,7 @@ export function createScriptWorkspace({
         return;
       }
 
+      if (canAdoptOpenedFile) onAhkVersionDetected(result.ahkVersion);
       const summary = mergeParsedEntries(entries, result);
       onEntriesChanged();
       if (canAdoptOpenedFile) markClean();

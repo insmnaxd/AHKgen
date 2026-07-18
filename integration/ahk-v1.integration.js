@@ -96,6 +96,15 @@ test(
           rawText: false,
           comment: "Backtick and colon",
         },
+        {
+          trigger: "multiline",
+          replacement: "First line\nSecond line +{Enter}\nThird line",
+          autoReplace: true,
+          caseSensitive: false,
+          insideWord: false,
+          rawText: false,
+          comment: "Multiline replacement",
+        },
       ],
       remaps: [
         {

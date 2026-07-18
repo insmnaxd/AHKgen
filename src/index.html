@@ -4,14 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AHKgen</title>
-    <script>
-      // Runs before CSS loads and follows the system theme for first paint.
-      // main.js later applies the persisted theme from the app config file.
-      (function () {
-        var theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", theme);
-      })();
-    </script>
+    <script src="theme-bootstrap.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -38,31 +31,42 @@
         <div class="app-header-top">
           <div>
             <h1>AHKgen <span class="version-tag"></span></h1>
-            <p class="subtitle" data-i18n="app.subtitle">Simple script generator for AutoHotkey v1</p>
+            <p class="subtitle" data-i18n="app.subtitle">Simple script generator for AutoHotkey v1 and v2</p>
           </div>
-          <label class="theme-switch" title="Toggle light/dark theme" data-i18n-title="theme.toggle">
-            <input type="checkbox" id="theme-toggle-checkbox" />
-            <span class="theme-switch-track">
-              <span class="theme-switch-thumb">
-                <span class="theme-switch-icon theme-switch-icon-sun">☀️</span>
-                <span class="theme-switch-icon theme-switch-icon-moon">🌙</span>
+          <div class="app-header-actions">
+            <label class="ahk-version-switch" title="Switch generated AutoHotkey version" data-i18n-title="ahkVersion.toggle">
+              <span class="ahk-version-caption">AHK</span>
+              <input type="checkbox" id="ahk-version-toggle" role="switch" tabindex="-1" aria-label="Switch generated AutoHotkey version" data-i18n-aria-label="ahkVersion.toggle" />
+              <span class="ahk-version-track" aria-hidden="true">
+                <span class="ahk-version-thumb"></span>
+                <span class="ahk-version-label">v1</span>
+                <span class="ahk-version-label">v2</span>
               </span>
-            </span>
-          </label>
+            </label>
+            <label class="theme-switch" title="Toggle light/dark theme" data-i18n-title="theme.toggle">
+              <input type="checkbox" id="theme-toggle-checkbox" role="switch" tabindex="-1" aria-label="Toggle light/dark theme" data-i18n-aria-label="theme.toggle" />
+              <span class="theme-switch-track">
+                <span class="theme-switch-thumb">
+                  <span class="theme-switch-icon theme-switch-icon-sun">☀️</span>
+                  <span class="theme-switch-icon theme-switch-icon-moon">🌙</span>
+                </span>
+              </span>
+            </label>
+          </div>
         </div>
       </header>
 
       <main class="layout">
         <!-- MODE TABS -->
-        <div class="mode-tabs panel-wide">
-          <button type="button" class="mode-tab active" data-mode="hotkeys"><span data-i18n="tab.hotkeys">Hotkeys</span> <span class="tab-badge" id="tab-badge-hotkeys"></span></button>
-          <button type="button" class="mode-tab" data-mode="hotstrings"><span data-i18n="tab.hotstrings">Hotstrings</span> <span class="tab-badge" id="tab-badge-hotstrings"></span></button>
-          <button type="button" class="mode-tab" data-mode="remap"><span data-i18n="tab.remap">Remapping</span> <span class="tab-badge" id="tab-badge-remap"></span></button>
-          <button type="button" class="mode-tab mode-tab-settings" data-mode="settings" data-i18n="tab.settings">Settings</button>
+        <div class="mode-tabs panel-wide" role="tablist" aria-label="Editor modes" data-i18n-aria-label="aria.editorModes">
+          <button type="button" class="mode-tab active" id="tab-hotkeys" role="tab" aria-selected="true" aria-controls="mode-section-hotkeys list-section-hotkeys" tabindex="0" data-mode="hotkeys"><span data-i18n="tab.hotkeys">Hotkeys</span> <span class="tab-badge" id="tab-badge-hotkeys"></span></button>
+          <button type="button" class="mode-tab" id="tab-hotstrings" role="tab" aria-selected="false" aria-controls="mode-section-hotstrings list-section-hotstrings" tabindex="-1" data-mode="hotstrings"><span data-i18n="tab.hotstrings">Hotstrings</span> <span class="tab-badge" id="tab-badge-hotstrings"></span></button>
+          <button type="button" class="mode-tab" id="tab-remap" role="tab" aria-selected="false" aria-controls="mode-section-remap list-section-remap" tabindex="-1" data-mode="remap"><span data-i18n="tab.remap">Remapping</span> <span class="tab-badge" id="tab-badge-remap"></span></button>
+          <button type="button" class="mode-tab mode-tab-settings" id="tab-settings" role="tab" aria-selected="false" aria-controls="mode-section-settings" tabindex="-1" data-mode="settings" data-i18n="tab.settings">Settings</button>
         </div>
 
         <!-- SETTINGS -->
-        <section class="panel panel-wide mode-section hidden" id="mode-section-settings">
+        <section class="panel panel-wide mode-section hidden" id="mode-section-settings" role="tabpanel" aria-labelledby="tab-settings" aria-hidden="true">
           <h2 data-i18n="settings.title">Settings</h2>
           <div class="settings-section">
             <h3 class="settings-section-title" data-i18n="settings.preferencesTitle">Preferences</h3>
@@ -90,7 +94,7 @@
                 <button type="button" id="reset-config-btn" class="btn btn-danger" data-i18n="button.resetConfig">Reset configuration</button>
               </div>
             </div>
-            <p id="settings-status" class="status-msg"></p>
+            <p id="settings-status" class="status-msg" role="status" aria-live="polite"></p>
           </div>
 
           <div class="settings-info-grid">
@@ -102,7 +106,7 @@
                 <li data-i18n="manual.step.configure">Configure the entry. Select keys on screen or click the selection field and press them physically.</li>
                 <li data-i18n="manual.step.add">Add the entry. Click an item in the list later to edit it.</li>
                 <li data-i18n="manual.step.review">Review the generated code in Script preview.</li>
-                <li data-i18n="manual.step.export">Copy the code or save it as an .ahk file, then run it with AutoHotkey v1.</li>
+                <li data-i18n="manual.step.export">Choose AHK v1 or v2, copy the code or save it as an .ahk file, then run it with the matching AutoHotkey version.</li>
               </ol>
               <p class="manual-note" data-i18n="manual.importNote">Use Open existing .ahk file to continue editing a script previously created by AHKgen.</p>
             </article>
@@ -116,7 +120,7 @@
                   <span class="about-version version-tag"></span>
                 </div>
               </div>
-              <p class="about-description" data-i18n="about.description">A local desktop generator for AutoHotkey v1 scripts.</p>
+              <p class="about-description" data-i18n="about.description">A local desktop generator for AutoHotkey v1 and v2 scripts.</p>
               <dl class="about-details">
                 <div>
                   <dt data-i18n="about.author">Author</dt>
@@ -131,23 +135,25 @@
                   <dd class="about-repository">github.com/insmnaxd/AHKgen</dd>
                 </div>
               </dl>
-              <p class="about-requirement" data-i18n="about.requirement">Generated scripts require AutoHotkey v1 to run.</p>
+              <p class="about-requirement" data-i18n="about.requirement">Generated scripts require the selected AutoHotkey version to run.</p>
             </article>
           </div>
         </section>
 
         <!-- NEW HOTKEY FORM (Hotkeys mode) -->
-        <section class="panel panel-wide mode-section" id="mode-section-hotkeys">
+        <section class="panel panel-wide mode-section" id="mode-section-hotkeys" role="tabpanel" aria-labelledby="tab-hotkeys" aria-hidden="false">
           <h2 id="form-title" data-i18n="form.hotkey.new">New hotkey</h2>
 
           <div class="field-group">
-            <label data-i18n="form.selectedHotkey">Selected hotkey</label>
+            <label id="selected-hotkey-label" data-i18n="form.selectedHotkey">Selected hotkey</label>
             <div class="selected-hotkey-row">
               <button
                 type="button"
                 id="selected-hotkey-display"
                 class="key-combination-display"
                 tabindex="-1"
+                data-mouse-only
+                aria-labelledby="selected-hotkey-label"
               >
                 <span>Click keys below to build a hotkey...</span>
               </button>
@@ -173,7 +179,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
           </div>
 
           <!-- Shared visual input picker is rendered by src/ui/visual-input.js. -->
-          <div class="keyboard" id="keyboard"></div>
+          <div class="keyboard" id="keyboard" data-mouse-only></div>
 
           <div class="field-group">
             <label for="action-type" data-i18n="form.action">Action</label>
@@ -222,11 +228,11 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
             <button id="add-hotkey-btn" class="btn btn-primary" data-i18n="button.addHotkey">+ Add hotkey</button>
             <button id="cancel-edit-btn" class="btn btn-secondary hidden" data-i18n="button.cancelEdit">Cancel edit</button>
           </div>
-          <p id="form-error" class="error-msg"></p>
+          <p id="form-error" class="error-msg" role="alert" aria-live="assertive"></p>
         </section>
 
         <!-- NEW HOTSTRING FORM (Hotstrings mode) -->
-        <section class="panel panel-wide mode-section hidden" id="mode-section-hotstrings">
+        <section class="panel panel-wide mode-section hidden" id="mode-section-hotstrings" role="tabpanel" aria-labelledby="tab-hotstrings" aria-hidden="true">
           <h2 id="hotstring-form-title" data-i18n="form.hotstring.new">New hotstring</h2>
 
           <div class="field-group">
@@ -243,12 +249,12 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
 
           <div class="field-group">
             <label for="hotstring-replacement-input" data-i18n="form.hotstring.replacement">Replacement</label>
-            <input
-              type="text"
+            <textarea
               id="hotstring-replacement-input"
+              rows="1"
               placeholder="e.g. by the way"
               data-i18n-placeholder="placeholder.hotstring.replacement"
-            />
+            ></textarea>
             <p class="hint" data-i18n="hint.hotstring.replacement">The text that will replace the trigger once it's typed.</p>
           </div>
 
@@ -288,25 +294,25 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
             <button id="add-hotstring-btn" class="btn btn-primary" data-i18n="button.addHotstring">+ Add hotstring</button>
             <button id="cancel-hotstring-edit-btn" class="btn btn-secondary hidden" data-i18n="button.cancelEdit">Cancel edit</button>
           </div>
-          <p id="hotstring-form-error" class="error-msg"></p>
+          <p id="hotstring-form-error" class="error-msg" role="alert" aria-live="assertive"></p>
         </section>
 
         <!-- NEW REMAP FORM (Remapping mode) -->
-        <section class="panel panel-wide mode-section hidden" id="mode-section-remap">
+        <section class="panel panel-wide mode-section hidden" id="mode-section-remap" role="tabpanel" aria-labelledby="tab-remap" aria-hidden="true">
           <h2 id="remap-form-title" data-i18n="form.remap.new">New key remap</h2>
 
           <div class="field-group remap-target-group">
             <div class="remap-target-row">
               <div class="remap-target-col">
-                <label data-i18n="form.remap.from">From key</label>
-                <button type="button" class="remap-target-btn key-combination-display" id="remap-target-from" data-target="from" tabindex="-1">
+                <label id="remap-from-label" data-i18n="form.remap.from">From key</label>
+                <button type="button" class="remap-target-btn key-combination-display" id="remap-target-from" data-target="from" tabindex="-1" data-mouse-only aria-labelledby="remap-from-label">
                   <span id="remap-from-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
                 </button>
               </div>
               <div class="remap-arrow">&rarr;</div>
               <div class="remap-target-col">
-                <label data-i18n="form.remap.to">To key</label>
-                <button type="button" class="remap-target-btn key-combination-display" id="remap-target-to" data-target="to" tabindex="-1">
+                <label id="remap-to-label" data-i18n="form.remap.to">To key</label>
+                <button type="button" class="remap-target-btn key-combination-display" id="remap-target-to" data-target="to" tabindex="-1" data-mouse-only aria-labelledby="remap-to-label">
                   <span id="remap-to-display" data-i18n="remap.pickKey">Click here, then pick a key</span>
                 </button>
               </div>
@@ -332,7 +338,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
           </div>
 
           <!-- Shared visual input picker is rendered by src/ui/visual-input.js. -->
-          <div class="keyboard" id="keyboard-remap"></div>
+          <div class="keyboard" id="keyboard-remap" data-mouse-only></div>
 
           <div class="field-group">
             <label for="remap-comment-input" data-i18n="form.comment">Comment (optional)</label>
@@ -348,11 +354,11 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
             <button id="add-remap-btn" class="btn btn-primary" data-i18n="button.addRemap">+ Add remap</button>
             <button id="cancel-remap-edit-btn" class="btn btn-secondary hidden" data-i18n="button.cancelEdit">Cancel edit</button>
           </div>
-          <p id="remap-form-error" class="error-msg"></p>
+          <p id="remap-form-error" class="error-msg" role="alert" aria-live="assertive"></p>
         </section>
 
         <!-- ADDED HOTKEYS LIST -->
-        <section class="panel mode-section" id="list-section-hotkeys">
+        <section class="panel mode-section" id="list-section-hotkeys" role="tabpanel" aria-labelledby="tab-hotkeys" aria-hidden="false">
           <h2><span data-i18n="list.hotkeys.title">Added hotkeys</span> <span id="hotkey-count" class="count-badge">0</span></h2>
           <ul id="hotkey-list" class="hotkey-list">
             <li class="empty-state" data-i18n="empty.hotkeys">No hotkeys added yet. Use the keyboard above.</li>
@@ -360,7 +366,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
         </section>
 
         <!-- ADDED HOTSTRINGS LIST -->
-        <section class="panel mode-section hidden" id="list-section-hotstrings">
+        <section class="panel mode-section hidden" id="list-section-hotstrings" role="tabpanel" aria-labelledby="tab-hotstrings" aria-hidden="true">
           <h2><span data-i18n="list.hotstrings.title">Added hotstrings</span> <span id="hotstring-count" class="count-badge">0</span></h2>
           <ul id="hotstring-list" class="hotkey-list">
             <li class="empty-state" data-i18n="empty.hotstrings">No hotstrings added yet. Fill out the form above.</li>
@@ -368,7 +374,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
         </section>
 
         <!-- ADDED REMAPS LIST -->
-        <section class="panel mode-section hidden" id="list-section-remap">
+        <section class="panel mode-section hidden" id="list-section-remap" role="tabpanel" aria-labelledby="tab-remap" aria-hidden="true">
           <h2><span data-i18n="list.remaps.title">Added remaps</span> <span id="remap-count" class="count-badge">0</span></h2>
           <ul id="remap-list" class="hotkey-list">
             <li class="empty-state" data-i18n="empty.remaps">No remaps added yet. Use the keyboard above.</li>
@@ -376,7 +382,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
         </section>
 
         <!-- SCRIPT PREVIEW -->
-        <section class="panel" id="script-preview-section">
+        <section class="panel" id="script-preview-section" aria-hidden="false">
           <h2 data-i18n="preview.title">Script preview (.ahk)</h2>
           <textarea id="script-preview" readonly spellcheck="false"></textarea>
           <div class="button-row">
@@ -384,7 +390,7 @@ Caution: Windows key interferes with system shortcuts; use of on-screen keyboard
             <button id="copy-btn" class="btn btn-secondary" data-i18n="button.copy">Copy to clipboard</button>
             <button id="save-btn" class="btn btn-primary" data-i18n="button.save">Save as .ahk</button>
           </div>
-          <p id="action-status" class="status-msg"></p>
+          <p id="action-status" class="status-msg" role="status" aria-live="polite"></p>
         </section>
       </main>
     </div>

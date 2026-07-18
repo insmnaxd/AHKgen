@@ -3,44 +3,41 @@ import test from "node:test";
 
 import {
   createMouseOnlyInteraction,
-  isTextEntryElement,
   shouldBlockKeyboardEvent,
 } from "../src/ui/mouse-only-interaction.js";
 
-function createElement({ selectorMatches = [], type = "", closest = false } = {}) {
+function createElement({ selectorMatches = [], mouseOnly = false } = {}) {
   return {
-    type,
     matches: (selector) =>
       selector
         .split(",")
         .map((part) => part.trim())
         .some((part) => selectorMatches.includes(part)),
-    closest: () => (closest ? {} : null),
+    closest: (selector) =>
+      mouseOnly && selector === "[data-mouse-only]" ? {} : null,
   };
 }
 
-test("Tab is blocked for every target", () => {
+test("Tab remains available for regular controls", () => {
   assert.equal(
     shouldBlockKeyboardEvent({
       key: "Tab",
-      target: createElement({ selectorMatches: ["input"], type: "text" }),
+      target: createElement({ selectorMatches: ["input"] }),
     }),
-    true
+    false
   );
 });
 
-test("typing and cursor movement remain enabled in text fields", () => {
-  const input = createElement({ selectorMatches: ["input"], type: "text" });
-  const textarea = createElement({ selectorMatches: ["textarea"] });
+test("regular buttons and selects keep their native keyboard behavior", () => {
+  const button = createElement({ selectorMatches: ["button"] });
+  const select = createElement({ selectorMatches: ["select"] });
 
-  assert.equal(isTextEntryElement(input), true);
-  assert.equal(isTextEntryElement(textarea), true);
-  assert.equal(shouldBlockKeyboardEvent({ key: "ArrowLeft", target: input }), false);
-  assert.equal(shouldBlockKeyboardEvent({ key: "a", target: textarea }), false);
+  assert.equal(shouldBlockKeyboardEvent({ key: "Enter", target: button }), false);
+  assert.equal(shouldBlockKeyboardEvent({ key: "ArrowDown", target: select }), false);
 });
 
 test("browser find shortcut is blocked even in text fields", () => {
-  const input = createElement({ selectorMatches: ["input"], type: "text" });
+  const input = createElement({ selectorMatches: ["input"] });
 
   assert.equal(
     shouldBlockKeyboardEvent({
@@ -71,12 +68,37 @@ test("browser find shortcut is blocked even in text fields", () => {
   );
 });
 
-test("keyboard input is blocked for non-text controls", () => {
-  const button = createElement({ closest: true });
-  const select = createElement({ closest: true });
+test("keyboard input is blocked only inside mouse-only regions", () => {
+  const visualKey = createElement({
+    selectorMatches: ["button"],
+    mouseOnly: true,
+  });
 
-  assert.equal(shouldBlockKeyboardEvent({ key: "Enter", target: button }), true);
-  assert.equal(shouldBlockKeyboardEvent({ key: "ArrowDown", target: select }), true);
+  assert.equal(shouldBlockKeyboardEvent({ key: "Enter", target: visualKey }), true);
+  assert.equal(shouldBlockKeyboardEvent({ key: "Tab", target: visualKey }), false);
+});
+
+test("only controls inside mouse-only regions are removed from the tab order", () => {
+  const tabIndexes = new Map();
+  const regularButton = {
+    closest: () => null,
+    setAttribute: (name, value) => tabIndexes.set(`regular:${name}`, value),
+  };
+  const visualKey = {
+    closest: (selector) => (selector === "[data-mouse-only]" ? {} : null),
+    setAttribute: (name, value) => tabIndexes.set(`visual:${name}`, value),
+  };
+  const controller = createMouseOnlyInteraction({
+    documentLike: {},
+    MutationObserverClass: class {},
+  });
+
+  controller.removeFromTabOrder({
+    querySelectorAll: () => [regularButton, visualKey],
+  });
+
+  assert.equal(tabIndexes.has("regular:tabindex"), false);
+  assert.equal(tabIndexes.get("visual:tabindex"), "-1");
 });
 
 test("context menu is disabled globally", () => {

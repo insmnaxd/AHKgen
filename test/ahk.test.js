@@ -9,6 +9,9 @@ import {
   unescapeFromExpressionString,
   unescapeFromRun,
   unescapeFromSend,
+  escapeForV2Send,
+  escapeForV2ExpressionString,
+  unescapeFromV2Send,
   unescapeHotstringTrigger,
 } from "../src/ahk/escaping.js";
 import { buildFullScript, buildHotstringLine } from "../src/ahk/generator.js";
@@ -37,6 +40,92 @@ test("Send escaping preserves special characters in a round-trip", () => {
   for (const input of cases) {
     assert.equal(unescapeFromSend(escapeForSend(input)), input);
   }
+});
+
+test("AHK v2 Send expression escaping preserves literal text", () => {
+  const cases = [
+    "{Enter} ^Ctrl !Alt +Shift #Win",
+    "Progress: 100% and a literal backtick: `",
+    'Quote: "hello"\nnext line',
+    "  padded\ttext  ",
+  ];
+
+  for (const input of cases) {
+    assert.equal(unescapeFromV2Send(escapeForV2Send(input)), input);
+  }
+});
+
+test("AHK v2 expression strings escape quotes with backticks", () => {
+  assert.equal(escapeForV2ExpressionString('say "hello" ` now'), 'say `"hello`" `` now');
+  assert.equal(
+    unescapeFromExpressionString(escapeForV2ExpressionString('say "hello" ` now')),
+    'say "hello" ` now'
+  );
+});
+
+test("complete AutoHotkey v2 script survives export and import", () => {
+  const input = {
+    version: "v1.0.0-test",
+    ahkVersion: "v2",
+    hotkeys: [
+      {
+        prefix: "^j",
+        actionType: "send",
+        actionValue: 'Progress: 100% {done} ` "quoted"\nNext line',
+        sendMode: "Event",
+        comment: "Event text",
+      },
+      {
+        prefix: "#b",
+        actionType: "url",
+        actionValue: 'https://example.com/?q="hello"&items=one,two',
+        sendMode: "Input",
+        comment: "",
+      },
+      {
+        prefix: "!r",
+        actionType: "run",
+        actionValue: 'C:\\Program Files\\Example "Test"\\app.exe',
+        sendMode: "Input",
+        comment: "Launch application",
+      },
+      {
+        prefix: "+c",
+        actionType: "command",
+        actionValue: 'cmd.exe /c echo "AHK v2"',
+        sendMode: "Input",
+        comment: "",
+      },
+    ],
+    hotstrings: [
+      {
+        trigger: ":clock:",
+        replacement: 'Time: "12:30" ` now',
+        autoReplace: true,
+        caseSensitive: true,
+        insideWord: false,
+        rawText: false,
+        comment: "Clock",
+      },
+    ],
+    remaps: [
+      { fromPrefix: "CapsLock", toPrefix: "Escape", comment: "Caps as Escape" },
+      { fromPrefix: "XButton2", toPrefix: "MButton", comment: "Mouse remap" },
+    ],
+  };
+
+  const script = buildFullScript(input);
+  const parsed = parseAhkScript(script);
+
+  assert.match(script, /#Requires AutoHotkey v2\.0/);
+  assert.match(script, /SendEvent\("/);
+  assert.match(script, /Run\("/);
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.ahkVersion, "v2");
+  assert.equal(parsed.skippedCount, 0);
+  assert.deepEqual(parsed.hotkeys, input.hotkeys);
+  assert.deepEqual(parsed.hotstrings, input.hotstrings);
+  assert.deepEqual(parsed.remaps, input.remaps);
 });
 
 test("Run escaping preserves quoted paths and URLs", () => {
@@ -191,6 +280,7 @@ test("complete AHK script survives export and import", () => {
   const script = buildFullScript(input);
   const parsed = parseAhkScript(script);
 
+  assert.match(script, /#Requires AutoHotkey v1\.1\.33\+/);
   assert.equal(parsed.success, true);
   assert.equal(parsed.skippedCount, 0);
   assert.deepEqual(parsed.hotkeys, input.hotkeys);
@@ -403,6 +493,33 @@ test("hotstring replacements preserve leading and trailing whitespace", () => {
     buildFullScript(input),
     /Hotstring\(":\*:pad", "  padded replacement  "\)/
   );
+});
+
+test("multiline hotstring replacements survive v1 and v2 round-trips", () => {
+  const replacement = "First line\nSecond line +{Enter}\nThird line";
+
+  for (const ahkVersion of ["v1", "v2"]) {
+    const input = {
+      version: "v1.0.0-test",
+      ahkVersion,
+      hotkeys: [],
+      hotstrings: [
+        {
+          trigger: "multiline",
+          replacement,
+          autoReplace: true,
+          caseSensitive: false,
+          insideWord: false,
+          rawText: false,
+          comment: "",
+        },
+      ],
+      remaps: [],
+    };
+
+    const parsed = parseAhkScript(buildFullScript(input));
+    assert.equal(parsed.hotstrings[0].replacement, replacement);
+  }
 });
 
 test("parser rejects scripts without the AHKgen signature", () => {

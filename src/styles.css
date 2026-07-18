@@ -384,6 +384,14 @@ textarea,
   opacity: 0.7;
 }
 
+#hotstring-replacement-input {
+  min-height: 40px;
+  max-height: 240px;
+  line-height: 1.45;
+  resize: none;
+  overflow-y: hidden;
+}
+
 .hint {
   margin: 6px 0 0;
   font-size: 0.78rem;
@@ -614,6 +622,18 @@ textarea,
   min-width: 0;
 }
 
+.entry-edit-button {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .hotkey-badge {
   display: inline-flex;
   align-items: center;
@@ -701,9 +721,12 @@ textarea,
   text-overflow: clip;
 }
 
-.hotkey-item-expandable:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: -1px;
+.entry-edit-button:focus-visible,
+.btn-remove:focus-visible,
+.btn-remove-remap:focus-visible,
+.btn-remove-hotstring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .hotkey-comment {
@@ -782,6 +805,98 @@ textarea,
 
 }
 
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.ahk-version-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.ahk-version-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.ahk-version-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  width: 76px;
+  height: 30px;
+  padding: 2px;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background-color: var(--key-bg);
+}
+
+.ahk-version-thumb {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: stretch;
+  border-radius: 999px;
+  background-color: var(--modifier-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  transition: transform 0.2s ease;
+}
+
+.ahk-version-label {
+  position: relative;
+  z-index: 1;
+  grid-row: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: none;
+  transition: color 0.2s ease;
+}
+
+.ahk-version-label:nth-child(2) {
+  grid-column: 1;
+}
+
+.ahk-version-label:last-child {
+  grid-column: 2;
+}
+
+.ahk-version-label:nth-child(2),
+.ahk-version-switch input:checked + .ahk-version-track .ahk-version-label:last-child {
+  color: #fff;
+}
+
+.ahk-version-switch input:checked + .ahk-version-track .ahk-version-thumb {
+  transform: translateX(100%);
+}
+
+.ahk-version-switch input:checked + .ahk-version-track .ahk-version-label:nth-child(2) {
+  color: var(--text-muted);
+}
+
+.ahk-version-switch input:focus-visible + .ahk-version-track,
+.theme-switch input:focus-visible + .theme-switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* --- Visual keyboard --- */
 
 .selected-hotkey-row {
@@ -842,6 +957,8 @@ textarea,
   background-color: var(--input-bg);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
+  container-name: visual-input-picker;
+  container-type: inline-size;
 }
 
 .visual-input-devices {
@@ -1077,6 +1194,15 @@ textarea,
   color: var(--text-heading);
   background-color: var(--panel-bg);
   border-color: var(--panel-border);
+}
+
+.mode-tab:focus-visible,
+.titlebar-btn:focus-visible,
+.btn:focus-visible,
+.settings-select:focus-visible,
+.keyboard-layout-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .mode-tab-settings {
@@ -1517,7 +1643,7 @@ input#action-value {
   color: #ffffff;
 }
 
-@media (max-width: 1050px) {
+@container visual-input-picker (max-width: 900px) {
   .visual-input-devices {
     grid-template-columns: minmax(0, 1fr);
   }

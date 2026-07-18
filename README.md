@@ -14,6 +14,7 @@ AHKgen allows you to quickly create hotkeys, hotstrings, key remaps, and "send t
 - **Send Text** – Insert text (supports multiple lines and newlines)
 - **Open URL** and **Run Command** actions
 - **Import & Edit** existing AHKgen-generated scripts
+- **AutoHotkey v1 and v2** – Switch output version instantly without recreating entries
 - **Physical Input Capture** – Press keyboard and mouse buttons directly
 - **Full-size Keyboard and Mouse Schemes**
 - **Keyboard Layout Support** – QWERTY, QWERTZ, AZERTY
@@ -29,17 +30,17 @@ AHKgen allows you to quickly create hotkeys, hotstrings, key remaps, and "send t
 
 Download the latest release from the [GitHub Releases](https://github.com/insmnaxd/AHKgen/releases) page.
 
-AHKgen is built for Windows. AutoHotkey v1 is required to run generated scripts.
+AHKgen is built for Windows. AutoHotkey v1 or v2 is required, matching the version selected in the application.
 
 ---
 
 ## 🚀 Quick Start
 
-1. Choose **Hotkeys**, **Hotstrings**, or **Remapping**.
+1. Choose **AutoHotkey v1 or v2**, then select **Hotkeys**, **Hotstrings**, or **Remapping**.
 2. Configure the entry. In Hotkeys and Remapping, select keys on screen or click the selection field and press them physically.
 3. Add the entry. Click an item in its list to edit it later.
 4. Review the generated AutoHotkey code in **Script preview**.
-5. Copy the code or save it as an `.ahk` file and run it with AutoHotkey v1.
+5. Copy the code or save it as an `.ahk` file and run it with the selected AutoHotkey version.
 
 Use **Open existing .ahk file** to continue editing a script previously created by AHKgen. Unsupported or manually altered blocks may be skipped during import.
 

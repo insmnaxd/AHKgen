@@ -4,7 +4,27 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
-## [1.0.0-alpha.8] - 2026-30-06
+
+## [1.0.0-alpha.9] - 2026-07-18
+
+### Added
+
+- AutoHotkey v2 generation, import, and real-interpreter validation.
+- AHK v1/v2 switch.
+- Content Security Policy for local assets and Tauri IPC.
+- Selective keyboard navigation and ARIA semantics for tabs, forms, lists, and status messages.
+
+### Changed
+
+- AutoHotkey v2 is now selected by default on new installations.
+- The Hotstrings replacement field now grows automatically for multiline text.
+- Generated v1 scripts now declare AutoHotkey v1.1.33 or newer as a requirement.
+
+### Fixed
+
+- Improved window and visual keyboard scaling across Windows DPI settings.
+
+## [1.0.0-alpha.8] - 2026-06-30
 
 ### Added
 

@@ -1,14 +1,14 @@
 {
   "name": "AHKgen",
   "private": true,
-  "version": "1.0.0-alpha.8",
+  "version": "1.0.0-alpha.9",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
     "bump": "node scripts/bump.cjs",
     "test": "node --test --test-isolation=none",
-    "test:ahk": "node --test --test-isolation=none integration/ahk-v1.integration.js"
+    "test:ahk": "node --test --test-isolation=none integration/ahk-v1.integration.js integration/ahk-v2.integration.js"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

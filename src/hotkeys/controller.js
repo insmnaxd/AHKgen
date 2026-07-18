@@ -260,17 +260,19 @@ export function createHotkeysController({
             )}</strong>${sendModeTag}</span>`;
 
         return `
-          <li class="hotkey-item hotkey-item-expandable hotkey-entry${editingClass}" data-index="${index}" tabindex="-1">
-            <div class="hotkey-item-main">
+          <li class="hotkey-item hotkey-item-expandable hotkey-entry${editingClass}" data-index="${index}">
+            <button type="button" class="hotkey-item-main entry-edit-button" aria-label="${escapeHtml(
+              `${t("button.edit")}: ${hotkey.prefix}`
+            )}">
               <span class="entry-prefix">
                 <span class="hotkey-badge">${escapeHtml(hotkey.prefix)}</span>
               </span>
               ${description}
-            </div>
+            </button>
             <div class="hotkey-item-actions">
-              <button class="btn-remove" data-index="${index}" title="${escapeHtml(
+              <button type="button" class="btn-remove" data-index="${index}" title="${escapeHtml(
                 t("button.remove")
-              )}">&times;</button>
+              )}" aria-label="${escapeHtml(t("button.remove"))}">&times;</button>
             </div>
           </li>
         `;
