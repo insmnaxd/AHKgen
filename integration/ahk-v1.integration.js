@@ -242,7 +242,7 @@ function compareVersionDirectories(left, right) {
 
 function makeSelfTerminating(script) {
   const prelude = [
-    "SetTimer, __AHKGEN_TEST_FINISH, -50",
+    "SetTimer, __AHKFORGE_TEST_FINISH, -50",
     "",
   ].join("\n");
   const marker = "SetWorkingDir, %A_ScriptDir%\n";
@@ -251,7 +251,7 @@ function makeSelfTerminating(script) {
   return [
     instrumented,
     "",
-    "__AHKGEN_TEST_FINISH:",
+    "__AHKFORGE_TEST_FINISH:",
     'FileAppend, % "OK|" A_AhkVersion, %A_ScriptDir%\\result.txt',
     "ExitApp",
   ].join("\n");
@@ -259,7 +259,7 @@ function makeSelfTerminating(script) {
 
 async function runAhkScript(script, timeoutMs = 5000) {
   const temporaryDirectory = await mkdtemp(
-    path.join(os.tmpdir(), "ahkgen-interpreter-")
+    path.join(os.tmpdir(), "ahkforge-interpreter-")
   );
   const scriptPath = path.join(temporaryDirectory, "test.ahk");
   const resultPath = path.join(temporaryDirectory, "result.txt");

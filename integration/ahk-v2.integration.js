@@ -142,13 +142,13 @@ async function findInterpreter() {
 
 function makeSelfTerminating(script) {
   const marker = "SetWorkingDir(A_ScriptDir)\n";
-  const prelude = "SetTimer(__AHKGEN_TEST_FINISH, -50)\n";
+  const prelude = "SetTimer(__AHKFORGE_TEST_FINISH, -50)\n";
   const instrumented = script.replace(marker, `${marker}${prelude}`);
 
   return [
     instrumented,
     "",
-    "__AHKGEN_TEST_FINISH() {",
+    "__AHKFORGE_TEST_FINISH() {",
     '    FileAppend("OK|" A_AhkVersion, A_ScriptDir "\\result.txt")',
     "    ExitApp()",
     "}",
@@ -156,7 +156,7 @@ function makeSelfTerminating(script) {
 }
 
 async function runAhkScript(script, timeoutMs = 5000) {
-  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "ahkgen-v2-interpreter-"));
+  const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "ahkforge-v2-interpreter-"));
   const scriptPath = path.join(temporaryDirectory, "test.ahk");
   const resultPath = path.join(temporaryDirectory, "result.txt");
   await writeFile(scriptPath, `\uFEFF${script}`, "utf8");

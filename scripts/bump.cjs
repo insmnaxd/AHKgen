@@ -14,7 +14,7 @@ process.noDeprecation = true;
 //
 //   - package.json + package-lock.json  -> via `npm version <type>`
 //   - src-tauri/Cargo.toml + Cargo.lock -> via `cargo set-version <version>`
-//   - main.js                           -> AHKGEN_VERSION constant (regex replace)
+//   - main.js                           -> AHKFORGE_VERSION constant (regex replace)
 //
 // index.html is NOT touched: its .version-tag span is filled in by main.js's
 // injectVersion() at runtime, so it never needs editing.
@@ -134,28 +134,28 @@ function bumpCargo(newVersion) {
   }
 }
 
-// Replaces exactly one occurrence of the AHKGEN_VERSION declaration in main.js.
+// Replaces exactly one occurrence of the AHKFORGE_VERSION declaration in main.js.
 // Refuses to guess if it finds zero or more-than-one match, rather than silently
 // doing nothing or editing the wrong line.
 function bumpMainJs(newVersion) {
   const relPath = "src/main.js";
   const fullPath = path.join(ROOT, relPath);
-  const pattern = /const AHKGEN_VERSION = "v\d+\.\d+\.\d+(?:-[\w.]+)?";/;
+  const pattern = /const AHKFORGE_VERSION = "v\d+\.\d+\.\d+(?:-[\w.]+)?";/;
 
   const contents = fs.readFileSync(fullPath, "utf8");
   const matches = contents.match(pattern);
 
   if (!matches) {
     fail(
-      `Could not find "const AHKGEN_VERSION = \\"v X.Y.Z\\";" in ${relPath}. ` +
+      `Could not find "const AHKFORGE_VERSION = \\"v X.Y.Z\\";" in ${relPath}. ` +
         "Nothing was changed there - please update it by hand and check this script's regex."
     );
   }
   if (contents.split(pattern).length - 1 > 1) {
-    fail(`Found more than one AHKGEN_VERSION declaration in ${relPath}. Refusing to guess which one to change.`);
+    fail(`Found more than one AHKFORGE_VERSION declaration in ${relPath}. Refusing to guess which one to change.`);
   }
 
-  const updated = contents.replace(pattern, `const AHKGEN_VERSION = "v${newVersion}";`);
+  const updated = contents.replace(pattern, `const AHKFORGE_VERSION = "v${newVersion}";`);
   fs.writeFileSync(fullPath, updated, "utf8");
   console.log(`✓ ${relPath} (v${newVersion})`);
 }

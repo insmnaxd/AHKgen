@@ -5,12 +5,6 @@ export const DEFAULT_USER_CONFIG = {
   ahkVersion: "v2",
 };
 
-export const LEGACY_STORAGE_KEYS = {
-  language: "ahkgen.language",
-  theme: "ahkgen.theme",
-  keyboardLayout: "ahkgen.keyboardLayout",
-};
-
 export function normalizeUserConfig(config, { resolveLanguage, isKeyboardLayout }) {
   return {
     language: resolveLanguage(config?.language) || null,
@@ -20,45 +14,8 @@ export function normalizeUserConfig(config, { resolveLanguage, isKeyboardLayout 
   };
 }
 
-export function mergeLegacyPreferences(config, legacy, dependencies) {
-  const migrated = { ...config };
-
-  if (!migrated.language) {
-    migrated.language = dependencies.resolveLanguage(legacy.language);
-  }
-  if (!migrated.theme) {
-    migrated.theme = legacy.theme === "light" || legacy.theme === "dark" ? legacy.theme : null;
-  }
-  if (!migrated.keyboardLayout) {
-    migrated.keyboardLayout = dependencies.isKeyboardLayout(legacy.keyboardLayout)
-      ? legacy.keyboardLayout
-      : null;
-  }
-
-  const normalized = normalizeUserConfig(migrated, dependencies);
-  return {
-    config: normalized,
-    changed: JSON.stringify(normalized) !== JSON.stringify(config),
-  };
-}
-
-function readLegacyPreferences(storage) {
-  const preferences = {};
-
-  for (const [name, storageKey] of Object.entries(LEGACY_STORAGE_KEYS)) {
-    try {
-      preferences[name] = storage.getItem(storageKey);
-    } catch {
-      preferences[name] = null;
-    }
-  }
-
-  return preferences;
-}
-
 export function createUserConfigStore({
   invoke,
-  storage,
   resolveLanguage,
   isKeyboardLayout,
   warn = console.warn,
@@ -86,12 +43,6 @@ export function createUserConfigStore({
       config = { ...DEFAULT_USER_CONFIG };
     }
 
-    const migration = mergeLegacyPreferences(config, readLegacyPreferences(storage), dependencies);
-    config = migration.config;
-    if (migration.changed) {
-      await queueSave();
-    }
-
     return get();
   }
 
@@ -105,21 +56,10 @@ export function createUserConfigStore({
     return get();
   }
 
-  function clearLegacyPreferences() {
-    for (const storageKey of Object.values(LEGACY_STORAGE_KEYS)) {
-      try {
-        storage.removeItem(storageKey);
-      } catch (error) {
-        warn(`Could not remove legacy preference ${storageKey}:`, error);
-      }
-    }
-  }
-
   return {
     load,
     get,
     update,
     flush: () => saveQueue,
-    clearLegacyPreferences,
   };
 }

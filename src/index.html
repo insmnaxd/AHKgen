@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AHKgen</title>
+    <title>AHKforge</title>
     <script src="theme-bootstrap.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -12,7 +12,7 @@
     <!-- data-tauri-drag-region makes the empty parts of this bar draggable, like a native title bar.
          The buttons themselves are excluded from drag handling automatically since they're interactive elements. -->
     <div class="titlebar" data-tauri-drag-region>
-      <div class="titlebar-title" data-tauri-drag-region>AHKgen</div>
+      <div class="titlebar-title" data-tauri-drag-region>AHKforge</div>
       <div class="titlebar-controls">
         <button type="button" class="titlebar-btn" id="titlebar-minimize" title="Minimize" aria-label="Minimize" data-i18n-title="titlebar.minimize" data-i18n-aria-label="titlebar.minimize">
           <svg viewBox="0 0 10 10" width="10" height="10"><path d="M0 5h10" stroke="currentColor" stroke-width="1" /></svg>
@@ -30,7 +30,7 @@
       <header class="app-header">
         <div class="app-header-top">
           <div>
-            <h1>AHKgen <span class="version-tag"></span></h1>
+            <h1>AHKforge <span class="version-tag"></span></h1>
             <p class="subtitle" data-i18n="app.subtitle">Simple script generator for AutoHotkey v1 and v2</p>
           </div>
           <div class="app-header-actions">
@@ -124,15 +124,15 @@
                 <li data-i18n="manual.step.review">Review the generated code in Script preview.</li>
                 <li data-i18n="manual.step.export">Choose AHK v1 or v2, copy the code or save it as an .ahk file, then run it with the matching AutoHotkey version.</li>
               </ol>
-              <p class="manual-note" data-i18n="manual.importNote">Use Open existing .ahk file to continue editing a script previously created by AHKgen.</p>
+              <p class="manual-note" data-i18n="manual.importNote">Use Open existing .ahk file to continue editing a script previously created by AHKforge.</p>
             </article>
 
             <article class="settings-card about-card">
               <h3 data-i18n="about.title">About</h3>
               <div class="about-brand">
-                <img class="about-logo" src="assets/ahkgen.png" alt="" />
+                <img class="about-logo" src="assets/ahkforge.png" alt="" />
                 <div>
-                  <strong class="about-name">AHKgen</strong>
+                  <strong class="about-name">AHKforge</strong>
                   <span class="about-version version-tag"></span>
                 </div>
               </div>
@@ -148,7 +148,7 @@
                 </div>
                 <div>
                   <dt data-i18n="about.repository">Repository</dt>
-                  <dd class="about-repository">github.com/insmnaxd/AHKgen</dd>
+                  <dd class="about-repository">github.com/insmnaxd/AHKforge</dd>
                 </div>
               </dl>
               <p class="about-requirement" data-i18n="about.requirement">Generated scripts require the selected AutoHotkey version to run.</p>

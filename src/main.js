@@ -16,11 +16,12 @@ import { createLanguagePicker } from "./ui/language-picker.js";
 import { createModesController } from "./ui/modes.js";
 import { createMouseOnlyInteraction } from "./ui/mouse-only-interaction.js";
 import { createScriptWorkspace } from "./ui/script-workspace.js";
+import { setAnimatedMessage } from "./ui/status-message.js";
 import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKGEN_VERSION = "v1.0.0-beta.1";
+const AHKFORGE_VERSION = "v1.0.0-beta.2";
 
 const {
   fs,
@@ -41,7 +42,6 @@ const i18n = createI18n();
 const t = (key, values = {}) => i18n.t(key, values);
 const userConfigStore = createUserConfigStore({
   invoke: core.invoke,
-  storage: localStorage,
   resolveLanguage: resolveSupportedLanguage,
   isKeyboardLayout: isSupportedKeyboardLayout,
 });
@@ -106,7 +106,7 @@ function resetEditors() {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
-  injectVersion(document, AHKGEN_VERSION);
+  injectVersion(document, AHKFORGE_VERSION);
   renderVisualInputPicker(document.querySelector("#keyboard"));
   renderVisualInputPicker(document.querySelector("#keyboard-remap"));
 
@@ -170,7 +170,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   scriptWorkspace = createScriptWorkspace({
     documentLike: document,
-    version: AHKGEN_VERSION,
+    version: AHKFORGE_VERSION,
     entries,
     t,
     clipboard: clipboardManager,
@@ -241,7 +241,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     shouldConfirmClose: () => scriptWorkspace.hasUnsavedChanges(),
     confirmClose: () =>
       dialog.confirm(t("close.unsavedConfirmation"), {
-        title: "AHKgen",
+        title: "AHKforge",
         kind: "warning",
         okLabel: t("button.closeAnyway"),
         cancelLabel: t("button.cancel"),
@@ -272,7 +272,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
   resetConfigButton.addEventListener("click", async () => {
     const confirmed = await dialog.confirm(t("settings.resetConfirmation"), {
-      title: "AHKgen",
+      title: "AHKforge",
       kind: "warning",
       okLabel: t("button.resetConfig"),
       cancelLabel: t("button.cancel"),
@@ -280,15 +280,17 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (!confirmed) return;
 
     resetConfigButton.disabled = true;
-    settingsStatus.textContent = t("status.resettingConfig");
     settingsStatus.className = "status-msg";
+    setAnimatedMessage(settingsStatus, t("status.resettingConfig"));
     try {
-      userConfigStore.clearLegacyPreferences();
       await core.invoke("reset_user_config");
     } catch (error) {
       resetConfigButton.disabled = false;
-      settingsStatus.textContent = t("status.resetConfigError", { error });
       settingsStatus.className = "status-msg status-error";
+      setAnimatedMessage(
+        settingsStatus,
+        t("status.resetConfigError", { error })
+      );
     }
   });
 

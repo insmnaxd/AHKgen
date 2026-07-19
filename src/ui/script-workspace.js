@@ -1,10 +1,17 @@
 import { mergeParsedEntries, getImportStatus } from "../ahk/import.js";
 import { buildFullScript } from "../ahk/generator.js";
 import { parseAhkScript } from "../ahk/parser.js";
+import {
+  setAnimatedMessage,
+  startMessageExit,
+} from "./status-message.js";
 
 const AHK_FILE_FILTERS = [
   { name: "AutoHotkey Script", extensions: ["ahk"] },
 ];
+const SUCCESS_STATUS_DURATION = 4000;
+const ERROR_STATUS_DURATION = 7000;
+const STATUS_EXIT_DURATION = 180;
 
 export function createScriptWorkspace({
   documentLike,
@@ -48,17 +55,20 @@ export function createScriptWorkspace({
       statusTimeoutId = null;
     }
 
-    status.textContent = message;
     status.className = isError
       ? "status-msg status-error"
       : "status-msg status-success";
+    setAnimatedMessage(status, message);
 
-    if (autoClear && !isError) {
+    if (autoClear) {
       statusTimeoutId = setTimeoutFn(() => {
-        status.textContent = "";
-        status.className = "status-msg";
-        statusTimeoutId = null;
-      }, 4000);
+        startMessageExit(status);
+        statusTimeoutId = setTimeoutFn(() => {
+          status.textContent = "";
+          status.className = "status-msg";
+          statusTimeoutId = null;
+        }, STATUS_EXIT_DURATION);
+      }, isError ? ERROR_STATUS_DURATION : SUCCESS_STATUS_DURATION);
     }
   }
 
@@ -118,7 +128,7 @@ export function createScriptWorkspace({
       const summary = mergeParsedEntries(entries, result);
       onEntriesChanged();
       if (canAdoptOpenedFile) markClean();
-      setStatus(getImportStatus(summary, result.skippedCount, t), false, false);
+      setStatus(getImportStatus(summary, result.skippedCount, t));
     } catch (error) {
       setStatus(t("status.openError", { error }), true);
     }

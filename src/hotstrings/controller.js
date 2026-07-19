@@ -5,6 +5,7 @@ import {
 } from "./model.js";
 import { removeEntryByReference } from "../ui/entries.js";
 import { createAutoResizeTextarea } from "../ui/auto-resize-textarea.js";
+import { setAnimatedMessage } from "../ui/status-message.js";
 
 export function createHotstringsController({
   documentLike,
@@ -181,7 +182,10 @@ export function createHotstringsController({
     const validation = validateHotstringEntry(entries, candidate, editingIndex);
 
     if (!validation.valid) {
-      elements.error.textContent = t(validation.errorKey, validation.values);
+      setAnimatedMessage(
+        elements.error,
+        t(validation.errorKey, validation.values)
+      );
       return;
     }
 

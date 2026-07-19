@@ -312,6 +312,10 @@ textarea,
   padding: 20px;
 }
 
+.mode-section.panel-wide {
+  border-radius: 0 0 10px 10px;
+}
+
 .panel h2 {
   margin: 0 0 16px;
   font-size: 1.05rem;
@@ -578,6 +582,45 @@ textarea.auto-growing-textarea {
 
 .status-error {
   color: var(--danger);
+}
+
+.message-entering {
+  animation: message-enter 0.18s ease both;
+}
+
+.message-leaving {
+  animation: message-leave 0.18s ease both;
+}
+
+@keyframes message-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes message-leave {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+
+#action-status {
+  height: 2.8em;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 /* --- Hotkey list --- */
@@ -1192,8 +1235,11 @@ textarea.auto-growing-textarea {
 
 .mode-tabs {
   display: flex;
+  align-items: flex-end;
   gap: 4px;
-  margin-bottom: 4px;
+  margin-bottom: -20px;
+  position: relative;
+  z-index: 1;
 }
 
 .mode-tab {
@@ -1218,9 +1264,20 @@ textarea.auto-growing-textarea {
 }
 
 .mode-tab.active {
+  position: relative;
   color: var(--text-heading);
   background-color: var(--panel-bg);
   border-color: var(--panel-border);
+}
+
+.mode-tab.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background-color: var(--panel-bg);
 }
 
 .mode-tab:focus-visible,
@@ -1774,8 +1831,11 @@ input#action-value {
   .select-picker-chevron,
   .select-picker-options,
   .error-msg,
-  .status-msg {
+  .status-msg,
+  .message-entering,
+  .message-leaving {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 

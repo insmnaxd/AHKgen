@@ -12,6 +12,7 @@ import {
 import { applyKeyboardLayoutToButton } from "../keyboard/layouts.js";
 import { createAutoResizeTextarea } from "../ui/auto-resize-textarea.js";
 import { removeEntryByReference } from "../ui/entries.js";
+import { setAnimatedMessage } from "../ui/status-message.js";
 
 export function createHotkeysController({
   documentLike,
@@ -335,7 +336,10 @@ export function createHotkeysController({
     });
 
     if (!validation.valid) {
-      elements.error.textContent = t(validation.errorKey, validation.values);
+      setAnimatedMessage(
+        elements.error,
+        t(validation.errorKey, validation.values)
+      );
       return;
     }
 

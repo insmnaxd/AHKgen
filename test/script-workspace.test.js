@@ -7,7 +7,26 @@ import { createScriptWorkspace } from "../src/ui/script-workspace.js";
 function createWorkspaceHarness({ openScript = "", initialAhkVersion = "v1" } = {}) {
   const listeners = new Map();
   const preview = { value: "" };
-  const status = { textContent: "", className: "status-msg" };
+  const status = {
+    textContent: "",
+    className: "status-msg",
+    classList: {
+      add(name) {
+        const names = new Set(status.className.split(" ").filter(Boolean));
+        names.add(name);
+        status.className = [...names].join(" ");
+      },
+      remove(...removedNames) {
+        const names = status.className
+          .split(" ")
+          .filter((name) => name && !removedNames.includes(name));
+        status.className = names.join(" ");
+      },
+    },
+    get offsetWidth() {
+      return 0;
+    },
+  };
   const buttons = Object.fromEntries(
     ["#copy-btn", "#save-btn", "#open-file-btn"].map((selector) => [
       selector,
@@ -22,6 +41,7 @@ function createWorkspaceHarness({ openScript = "", initialAhkVersion = "v1" } = 
   let workspace;
   let ahkVersion = initialAhkVersion;
   const detectedVersions = [];
+  const scheduledTimeouts = [];
   const documentLike = {
     querySelector(selector) {
       if (selector === "#script-preview") return preview;
@@ -50,7 +70,10 @@ function createWorkspaceHarness({ openScript = "", initialAhkVersion = "v1" } = 
       ahkVersion = detectedVersion;
       detectedVersions.push(detectedVersion);
     },
-    setTimeoutFn: () => 1,
+    setTimeoutFn: (callback, delay) => {
+      scheduledTimeouts.push({ callback, delay });
+      return scheduledTimeouts.length;
+    },
     clearTimeoutFn: () => {},
   });
   workspace.init();
@@ -61,6 +84,8 @@ function createWorkspaceHarness({ openScript = "", initialAhkVersion = "v1" } = 
     workspace,
     writes,
     detectedVersions,
+    scheduledTimeouts,
+    status,
     setAhkVersion: (version) => {
       ahkVersion = version;
       workspace.render();
@@ -68,6 +93,21 @@ function createWorkspaceHarness({ openScript = "", initialAhkVersion = "v1" } = 
     click: (selector) => listeners.get(`${selector}:click`)(),
   };
 }
+
+test("error statuses fade out without changing the reserved status area", () => {
+  const harness = createWorkspaceHarness();
+
+  harness.workspace.setStatus("Something went wrong.", true);
+  assert.equal(harness.scheduledTimeouts[0].delay, 7000);
+
+  harness.scheduledTimeouts[0].callback();
+  assert.match(harness.status.className, /message-leaving/);
+  assert.equal(harness.scheduledTimeouts[1].delay, 180);
+
+  harness.scheduledTimeouts[1].callback();
+  assert.equal(harness.status.textContent, "");
+  assert.equal(harness.status.className, "status-msg");
+});
 
 test("workspace becomes dirty only when entries differ from baseline", () => {
   const harness = createWorkspaceHarness();

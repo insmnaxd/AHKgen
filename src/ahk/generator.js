@@ -1,4 +1,4 @@
-import { AHKGEN_SIGNATURE_PREFIX } from "./constants.js";
+import { AHKFORGE_SIGNATURE_PREFIX } from "./constants.js";
 import {
   escapeForExpressionString,
   escapeForRun,
@@ -112,7 +112,7 @@ export function buildFullScript({
   const headerLines =
     normalizedVersion === AHK_VERSION_V2
       ? [
-          `${AHKGEN_SIGNATURE_PREFIX} ${version}`,
+          `${AHKFORGE_SIGNATURE_PREFIX} ${version}`,
           "; AutoHotkey v2",
           "#Requires AutoHotkey v2.0",
           "#SingleInstance Force",
@@ -120,7 +120,7 @@ export function buildFullScript({
           "",
         ]
       : [
-          `${AHKGEN_SIGNATURE_PREFIX} ${version}`,
+          `${AHKFORGE_SIGNATURE_PREFIX} ${version}`,
           "; AutoHotkey v1",
           "#Requires AutoHotkey v1.1.33+",
           "#NoEnv",

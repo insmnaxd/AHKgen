@@ -7,6 +7,7 @@ import { applyKeyboardLayoutToButton } from "../keyboard/layouts.js";
 import { removeEntryByReference } from "../ui/entries.js";
 import { createRemapEntry, validateRemapEntry } from "./model.js";
 import { getRemapKeyVisualState } from "./visual-state.js";
+import { setAnimatedMessage } from "../ui/status-message.js";
 
 export function createRemapsController({
   documentLike,
@@ -301,7 +302,10 @@ export function createRemapsController({
     });
 
     if (!validation.valid) {
-      elements.error.textContent = t(validation.errorKey, validation.values);
+      setAnimatedMessage(
+        elements.error,
+        t(validation.errorKey, validation.values)
+      );
       return;
     }
 

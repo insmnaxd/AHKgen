@@ -1,4 +1,4 @@
-import { AHKGEN_SIGNATURE_PREFIX } from "./constants.js";
+import { AHKFORGE_SIGNATURE_PREFIX } from "./constants.js";
 import {
   unescapeFromExpressionString,
   unescapeFromRun,
@@ -139,7 +139,9 @@ export function parseAhkScript(rawText) {
   const text = rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
   const lines = text.split(/\r\n|\r|\n/);
   const headerLines = lines.slice(0, 5);
-  const hasSignature = headerLines.some((line) => line.trim().startsWith(AHKGEN_SIGNATURE_PREFIX));
+  const hasSignature = headerLines.some((line) =>
+    line.trim().startsWith(AHKFORGE_SIGNATURE_PREFIX)
+  );
 
   if (!hasSignature) {
     return {
@@ -164,7 +166,7 @@ export function parseAhkScript(rawText) {
     const previous = lines[index - 1].trim();
     if (
       previous.startsWith(";") &&
-      !previous.startsWith(AHKGEN_SIGNATURE_PREFIX) &&
+      !previous.startsWith(AHKFORGE_SIGNATURE_PREFIX) &&
       previous !== "; AutoHotkey v1" &&
       previous !== "; AutoHotkey v2" &&
       previous !== "; --- Hotkeys ---" &&

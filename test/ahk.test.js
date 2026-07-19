@@ -522,7 +522,19 @@ test("multiline hotstring replacements survive v1 and v2 round-trips", () => {
   }
 });
 
-test("parser rejects scripts without the AHKgen signature", () => {
+test("generator writes the AHKforge signature", () => {
+  const script = buildFullScript({
+    version: "v1.0.0-test",
+    ahkVersion: "v2",
+    hotkeys: [],
+    hotstrings: [],
+    remaps: [],
+  });
+
+  assert.match(script, /^; Made with AHKforge v1\.0\.0-test$/m);
+});
+
+test("parser rejects scripts without the AHKforge signature", () => {
   assert.deepEqual(parseAhkScript("^j::\n    Send, test\nreturn"), {
     success: false,
     errorKey: "error.missingSignature",
@@ -531,7 +543,7 @@ test("parser rejects scripts without the AHKgen signature", () => {
 
 test("parser skips hotstrings containing unsupported options", () => {
   const script = [
-    "; Made with AHKgen v1.0.0-test",
+    "; Made with AHKforge v1.0.0-test",
     "; AutoHotkey v1",
     "#NoEnv",
     "#SingleInstance, Force",
@@ -557,7 +569,7 @@ test("parser skips hotstrings containing unsupported options", () => {
 
 test("parser skips hotkeys containing unsupported SendMode values", () => {
   const script = [
-    "; Made with AHKgen v1.0.0-test",
+    "; Made with AHKforge v1.0.0-test",
     "; AutoHotkey v1",
     "#NoEnv",
     "#SingleInstance, Force",

@@ -4,6 +4,17 @@ All notable changes in this project will be documented in this file.
 
 See [ROADMAP.md](./ROADMAP.md) for planned features and ideas.
 
+## [1.0.0-beta.2] - 2026-07-19
+
+### Changed
+
+- Renamed the application from AHKgen to AHKforge.
+- Redesigned app icon.
+
+### Fixed
+
+- Fixed missing status messages animations.
+
 ## [1.0.0-beta.1] - 2026-07-19
 
 ### Added
