@@ -1576,6 +1576,22 @@ textarea.auto-growing-textarea {
   font-size: 0.72rem;
 }
 
+.about-repository a {
+  color: var(--accent);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+.about-repository a:hover {
+  text-decoration: underline;
+}
+
+.about-repository a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 @media (max-width: 800px) {
   .settings-list {
     width: 100%;

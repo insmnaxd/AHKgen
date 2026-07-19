@@ -21,12 +21,13 @@ import { createThemeController } from "./ui/theme.js";
 import { createTitlebarController, injectVersion } from "./ui/titlebar.js";
 import { renderVisualInputPicker } from "./ui/visual-input.js";
 
-const AHKFORGE_VERSION = "v1.0.0-beta.2";
+const AHKFORGE_VERSION = "v1.0.0-rc.0";
 
 const {
   fs,
   dialog,
   clipboardManager,
+  opener,
   window: tauriWindow,
   event: tauriEvent,
   core,
@@ -126,6 +127,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
   const resetConfigButton = document.querySelector("#reset-config-btn");
   const settingsStatus = document.querySelector("#settings-status");
+  const repositoryLink = document.querySelector("#about-repository-link");
   const badges = {
     hotkeys: document.querySelector("#tab-badge-hotkeys"),
     hotstrings: document.querySelector("#tab-badge-hotstrings"),
@@ -269,6 +271,14 @@ window.addEventListener("DOMContentLoaded", async () => {
   languageSelect.addEventListener("change", () => {
     setLanguage(languageSelect.value, languageSelect, true);
     renderAll();
+  });
+  repositoryLink.addEventListener("click", async (event) => {
+    event.preventDefault();
+    try {
+      await opener.openUrl(repositoryLink.href);
+    } catch (error) {
+      console.warn("Could not open the AHKforge repository:", error);
+    }
   });
   resetConfigButton.addEventListener("click", async () => {
     const confirmed = await dialog.confirm(t("settings.resetConfirmation"), {

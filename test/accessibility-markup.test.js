@@ -28,3 +28,13 @@ test("language picker is labelled without making the surrounding text clickable"
     /<button\b[^>]*\bid="language-picker-button"[^>]*\baria-labelledby="settings-language-label language-picker-current-label"/
   );
 });
+
+test("About exposes the repository as an external link", async () => {
+  const htmlUrl = new URL("../src/index.html", import.meta.url);
+  const html = await readFile(htmlUrl, "utf8");
+
+  assert.match(
+    html,
+    /<a\b[^>]*\bid="about-repository-link"[^>]*\bhref="https:\/\/github\.com\/insmnaxd\/AHKforge"[^>]*>/
+  );
+});
